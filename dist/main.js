@@ -121,9 +121,11 @@ class PerlinNoise {
         this.permutation = this.generatePermutation();
         this.gradients = this.generateGradients();
     }
+    permutationCount = 128;
+    gradientCount = 16;
     generatePermutation() {
         let permutation = [];
-        for (let i = 0; i < 256; i++) {
+        for (let i = 0; i < this.permutationCount; i++) {
             permutation.push(i);
         }
         permutation.sort(() => this.rnd() - 0.5);
@@ -131,14 +133,14 @@ class PerlinNoise {
     }
     generateGradients() {
         const gradients = [];
-        for (let i = 0; i < 256; i++) {
+        for (let i = 0; i < this.gradientCount; i++) {
             const theta = this.rnd() * 2 * Math.PI;
             gradients.push({ x: Math.cos(theta), y: Math.sin(theta) });
         }
         return gradients;
     }
     dotGridGradient(ix, iy, x, y) {
-        const gradient = this.gradients[(this.permutation[ix + this.permutation[iy & 255]] & 255)];
+        const gradient = this.gradients[(this.permutation[ix + this.permutation[iy & this.permutationCount - 1]] & this.gradientCount - 1)];
         const dx = x - ix;
         const dy = y - iy;
         return dx * gradient.x + dy * gradient.y;
@@ -194,10 +196,31 @@ class PerlinNoise {
         };
     }
     GetGroundDataAt(x, y) {
-        const color = this.GeneratePerlinAt(x / 9, y / 9);
+        const color = this.GeneratePerlinAt(x / 32, y / 32);
         return new GroundData(new Vector2(x % Chunk.ChunkSize, y % Chunk.ChunkSize), new rgb(color.r, color.g, color.b));
     }
 }
+//TODO: try value noise¨
+/* generated code lol, good for inspiration or it might just work out of the box idk dont have the time for that now
+function valueNoise(x: number, y: number): number {
+    const intX = Math.floor(x);
+    const intY = Math.floor(y);
+    const fracX = x - intX;
+    const fracY = y - intY;
+  
+    const v1 = randomValue(intX, intY);
+    const v2 = randomValue(intX + 1, intY);
+    const v3 = randomValue(intX, intY + 1);
+    const v4 = randomValue(intX + 1, intY + 1);
+  
+    const i1 = lerp(v1, v2, fracX);
+    const i2 = lerp(v3, v4, fracY);
+    return lerp(i1, i2, fracY);
+  }
+  
+  function lerp(a: number, b: number, t: number): number {
+    return a + t * (b - a);
+  } */ 
 /// <reference path="../Math/Math.ts" />
 /// <reference path="./Generation/NoiseGenerator.ts" />
 /// <reference path="./MapManager.ts" />
