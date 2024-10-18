@@ -16,21 +16,29 @@ class Chunk{
         this.Load();
     }
     Load(){
+        
+        let startTime = performance.now()
         for(let y = 0; y < Chunk.ChunkSize; y++){
             for(let x = 0; x < Chunk.ChunkSize; x++){
                 //if(x == 0) this.data.push(new GroundData(new Vector2(x, y), new rgb(255, 255, 255)));
                 //else this.data.push(PerlinNoise.perlin.GetGroundDataAt(x + this.position.x * Chunk.ChunkSize, y + this.position.y * Chunk.ChunkSize));
-                this.data.push(PerlinNoise.perlin.GetGroundDataAt(x + this.position.x * Chunk.ChunkSize, y + this.position.y * Chunk.ChunkSize));
+                this.data.push(ValueNoise.valueNoise.GetGroundDataAt(x + this.position.x * Chunk.ChunkSize, y + this.position.y * Chunk.ChunkSize));
             }
         }
+        let endTime = performance.now()
+
+        //console.log(`${endTime - startTime} milliseconds`)
     }
     Draw(CameraOffset: Vector2){
         CameraOffset = CameraOffset.add(this.position.multiply(Chunk.ChunkSize*Chunk.PixelSize));
+        
         this.data.forEach(data => {
             RenderManager.ctx.fillStyle = data.color.get();
-            RenderManager.ctx.fillRect(data.position.x * Chunk.PixelSize + CameraOffset.x, 
-                data.position.y * Chunk.PixelSize + CameraOffset.y, Chunk.PixelSize, -Chunk.PixelSize);
+            RenderManager.ctx.fillRect(
+                Math.floor(data.position.x * Chunk.PixelSize + CameraOffset.x), 
+                Math.floor(data.position.y * Chunk.PixelSize + CameraOffset.y), Chunk.PixelSize, -Chunk.PixelSize);
         });
+        
         //write chunk number on the chunk
         RenderManager.ctx.save();
         RenderManager.ctx.scale(1, -1);

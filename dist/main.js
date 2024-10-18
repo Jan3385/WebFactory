@@ -200,7 +200,7 @@ class PerlinNoise {
         return new GroundData(new Vector2(x % Chunk.ChunkSize, y % Chunk.ChunkSize), new rgb(color.r, color.g, color.b));
     }
 }
-//TODO: try value noise¨
+//TODO: try value noise
 /* generated code lol, good for inspiration or it might just work out of the box idk dont have the time for that now
 function valueNoise(x: number, y: number): number {
     const intX = Math.floor(x);
@@ -220,7 +220,104 @@ function valueNoise(x: number, y: number): number {
   
   function lerp(a: number, b: number, t: number): number {
     return a + t * (b - a);
-  } */ 
+  } */
+class ValueNoise {
+    static valueNoise = new ValueNoise();
+    seed;
+    permutation;
+    constructor(seed = Math.random() * 1000) {
+        this.seed = seed;
+        this.permutation = this.generatePermutation();
+    }
+    // Precompute a permutation table like Perlin noise
+    permutationCount = 256;
+    generatePermutation() {
+        let permutation = [];
+        for (let i = 0; i < this.permutationCount; i++) {
+            permutation.push(i);
+        }
+        permutation.sort(() => Math.random() - 0.5);
+        return permutation.concat(permutation); // Double it for overflow handling
+    }
+    // Use a simple fade function for smoother interpolation
+    fade(t) {
+        return t * t * t * (t * (t * 6 - 15) + 10); // Smootherstep
+    }
+    // Linear interpolation
+    lerp(a, b, t) {
+        return a + t * (b - a);
+    }
+    // Generate a random value using the precomputed permutation table
+    valueAtGrid(ix, iy) {
+        const hash = this.permutation[(ix + this.permutation[iy % this.permutationCount]) % this.permutationCount];
+        return (hash / this.permutationCount) * 2 - 1; // Normalize to [-1, 1]
+    }
+    // Core function: Generate value noise at (x, y)
+    noise2d(x, y) {
+        const intX = Math.floor(x);
+        const intY = Math.floor(y);
+        const fracX = x - intX;
+        const fracY = y - intY;
+        // Compute random values at the four corners of the grid cell
+        const v1 = this.valueAtGrid(intX, intY);
+        const v2 = this.valueAtGrid(intX + 1, intY);
+        const v3 = this.valueAtGrid(intX, intY + 1);
+        const v4 = this.valueAtGrid(intX + 1, intY + 1);
+        // Smooth the fractional coordinates
+        const u = this.fade(fracX);
+        const v = this.fade(fracY);
+        // Interpolate between the values
+        const i1 = this.lerp(v1, v2, u);
+        const i2 = this.lerp(v3, v4, u);
+        return this.lerp(i1, i2, v);
+    }
+    // Fractal value noise (optional): adjust the number of octaves for performance
+    fractal2d(x, y, octaves) {
+        let total = 0;
+        let frequency = 1;
+        let amplitude = 1;
+        let maxValue = 0; // For normalization
+        for (let i = 0; i < octaves; i++) {
+            total += this.noise2d(x * frequency, y * frequency) * amplitude;
+            maxValue += amplitude;
+            amplitude *= 0.5;
+            frequency *= 2;
+        }
+        return total / maxValue; // Normalize to [-1, 1]
+    }
+    // Example usage: Generate terrain colors based on the fractal value noise
+    GenerateFractalAt(x, y) {
+        const value = (this.fractal2d(x / 12, y / 12, 16) + 1) / 2;
+        //ocean <1 - 0.7)
+        let t = (value - 0.7) / 0.3; //from 0.7 - 1 to 0 - 1
+        if (value > 0.7)
+            return {
+                r: lerp(11, 4, t),
+                g: lerp(89, 60, t),
+                b: lerp(214, 201, t),
+            };
+        //sand <0.7 - 0.60)
+        t = (value - 0.60) / 0.08; //from 0.60 - 0.7 to 0 - 1
+        if (value > 0.60)
+            return {
+                r: lerp(232, 204, t),
+                g: lerp(217, 191, t),
+                b: lerp(12, 8, t),
+            };
+        //grass <0.60 - 0>
+        t = (value - 0) / 0.60; //from 0 - 0.60 to 0 - 1
+        return {
+            r: lerp(22, 42, t),
+            g: lerp(153, 176, t),
+            b: lerp(5, 25, t),
+        };
+    }
+    // Generate ground data at (x, y)
+    GetGroundDataAt(x, y) {
+        const color = this.GenerateFractalAt(x, y);
+        return new GroundData(new Vector2(x % Chunk.ChunkSize, y % Chunk.ChunkSize), new rgb(color.r, color.g, color.b));
+    }
+}
 /// <reference path="../Math/Math.ts" />
 /// <reference path="./Generation/NoiseGenerator.ts" />
 /// <reference path="./MapManager.ts" />
@@ -237,19 +334,22 @@ class Chunk {
         this.Load();
     }
     Load() {
+        let startTime = performance.now();
         for (let y = 0; y < Chunk.ChunkSize; y++) {
             for (let x = 0; x < Chunk.ChunkSize; x++) {
                 //if(x == 0) this.data.push(new GroundData(new Vector2(x, y), new rgb(255, 255, 255)));
                 //else this.data.push(PerlinNoise.perlin.GetGroundDataAt(x + this.position.x * Chunk.ChunkSize, y + this.position.y * Chunk.ChunkSize));
-                this.data.push(PerlinNoise.perlin.GetGroundDataAt(x + this.position.x * Chunk.ChunkSize, y + this.position.y * Chunk.ChunkSize));
+                this.data.push(ValueNoise.valueNoise.GetGroundDataAt(x + this.position.x * Chunk.ChunkSize, y + this.position.y * Chunk.ChunkSize));
             }
         }
+        let endTime = performance.now();
+        //console.log(`${endTime - startTime} milliseconds`)
     }
     Draw(CameraOffset) {
         CameraOffset = CameraOffset.add(this.position.multiply(Chunk.ChunkSize * Chunk.PixelSize));
         this.data.forEach(data => {
             RenderManager.ctx.fillStyle = data.color.get();
-            RenderManager.ctx.fillRect(data.position.x * Chunk.PixelSize + CameraOffset.x, data.position.y * Chunk.PixelSize + CameraOffset.y, Chunk.PixelSize, -Chunk.PixelSize);
+            RenderManager.ctx.fillRect(Math.floor(data.position.x * Chunk.PixelSize + CameraOffset.x), Math.floor(data.position.y * Chunk.PixelSize + CameraOffset.y), Chunk.PixelSize, -Chunk.PixelSize);
         });
         //write chunk number on the chunk
         RenderManager.ctx.save();
@@ -302,7 +402,6 @@ class MapManager {
         this.cPlanet.Chunks.forEach(chunk => {
             if (!Player.ins.camera.AABB.isColliding(chunk.GetAABB())) {
                 this.cPlanet.Chunks.splice(this.cPlanet.Chunks.indexOf(chunk), 1);
-                console.log("Deleted chunk");
             }
         });
         let newChunks = [];
@@ -311,7 +410,6 @@ class MapManager {
                 const chunkPos = new Vector2(x, y);
                 if (!this.cPlanet.Chunks.some(chunk => chunk.position.x == chunkPos.x && chunk.position.y == chunkPos.y)) {
                     newChunks.push(new Chunk(chunkPos));
-                    console.log("Generated chunk");
                 }
             }
         }
@@ -361,8 +459,7 @@ class Camera {
 }
 class Player {
     static ins = new Player();
-    position = new Vector2(2 ** 14, 2 ** 14); //Map starts to break down at 0 and at 2**15 - spawn in the middle of that
-    //public position: Vector2 = new Vector2(0, 0); //Map starts to break down at 0 and at 2**15 - spawn in the middle of that
+    position = new Vector2(2 ** 16, 2 ** 16); //Perlin noise starts to break down at 0 and before 2**? - spawn in the about middle of that
     Speed = 3;
     camera = new Camera(this.position);
     constructor() { }
@@ -389,19 +486,28 @@ class RenderManager {
         RenderManager.ctx.scale(1, -1);
     }
     static canvas = document.getElementById('GameCanvas');
-    static ctx = RenderManager.canvas.getContext('2d');
+    static ctx = RenderManager.canvas.getContext('2d', { alpha: false });
     static ins = new RenderManager();
     Draw() {
         RenderManager.ctx.fillStyle = "black";
-        RenderManager.ctx.fillRect(0, 0, RenderManager.canvas.width, -RenderManager.canvas.height);
+        RenderManager.ctx.fillRect(0, 0, RenderManager.canvas.width, -RenderManager.canvas.height); //test how long this takes
         MapManager.ins.cPlanet.Chunks.forEach(chunk => {
-            chunk.Draw(Player.ins.camera.GetCameraOffset());
+            chunk.Draw(Player.ins.camera.GetCameraOffset()); //long execution time !!
         });
         Player.ins.Draw(Player.ins.camera.GetCameraOffset());
     }
     OnWindowResize() {
         RenderManager.canvas.width = window.innerWidth;
         RenderManager.canvas.height = window.innerHeight;
+    }
+}
+let ExecTimeStarts = [];
+function TimeExec(id) {
+    if (ExecTimeStarts[id] == undefined || Number.isNaN(ExecTimeStarts[id]))
+        ExecTimeStarts[id] = performance.now();
+    else {
+        console.log(`Execution time of ${id}: ${performance.now() - ExecTimeStarts[id]}ms`);
+        ExecTimeStarts[id] = Number.NaN;
     }
 }
 /// <reference path="../Math/Math.ts" />
@@ -547,16 +653,24 @@ window.addEventListener("mousemove", onMouseMove, false);
 window.addEventListener("wheel", onMouseWheel, false);
 /// <reference path="./Player/Player.ts" />
 /// <reference path="./Player/InputManager.ts" />
-const fps = 60;
+const fps = 60; //can run stable at only 20fps :(
 async function Main() {
     // Start
     let run = true;
     while (run) {
+        let startTime = performance.now();
         // Update loop
         UpdateInput();
-        Player.ins.move(MovementVector.multiply(3));
-        RenderManager.ins.Draw();
-        await new Promise(r => setTimeout(r, 1 / fps));
+        TimeExec(0);
+        Player.ins.move(MovementVector.multiply(3)); //updates chunks and moves player
+        TimeExec(0);
+        TimeExec(1);
+        RenderManager.ins.Draw(); //long execution time !! 20-30ms
+        TimeExec(1);
+        let endTime = performance.now();
+        const executionTime = endTime - startTime;
+        console.log(executionTime, (1 / fps * 1000) - executionTime);
+        await new Promise(r => setTimeout(r, Math.max((1 / fps * 1000) - executionTime, 0)));
     }
 }
 Main();

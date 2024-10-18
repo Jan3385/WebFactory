@@ -37,8 +37,7 @@ class Camera{
 
 class Player{
     public static ins: Player = new Player();
-    public position: Vector2 = new Vector2(2**14, 2**14); //Map starts to break down at 0 and at 2**15 - spawn in the middle of that
-    //public position: Vector2 = new Vector2(0, 0); //Map starts to break down at 0 and at 2**15 - spawn in the middle of that
+    public position: Vector2 = new Vector2(2**16, 2**16); //Perlin noise starts to break down at 0 and before 2**? - spawn in the about middle of that
     public Speed: number = 3;
 
     public camera: Camera = new Camera(this.position);

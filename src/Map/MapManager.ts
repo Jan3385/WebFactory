@@ -14,7 +14,6 @@ class MapManager {
         this.cPlanet.Chunks.forEach(chunk => {
             if(!Player.ins.camera.AABB.isColliding(chunk.GetAABB())){
                 this.cPlanet.Chunks.splice(this.cPlanet.Chunks.indexOf(chunk), 1);
-                console.log("Deleted chunk");
             }
         });
 
@@ -24,7 +23,6 @@ class MapManager {
                 const chunkPos = new Vector2(x, y);
                 if(!this.cPlanet.Chunks.some(chunk => chunk.position.x == chunkPos.x && chunk.position.y == chunkPos.y)){
                     newChunks.push(new Chunk(chunkPos));
-                    console.log("Generated chunk");
                 }
             }
         }
