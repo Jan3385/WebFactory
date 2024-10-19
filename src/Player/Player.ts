@@ -31,13 +31,13 @@ class Camera{
         MapManager.ins.UpdateChunks();
     }
     GetCameraOffset(){
-        return this.position.flip().add(new Vector2(Math.floor(window.innerWidth/2), -Math.floor(window.innerHeight/2)));
+        return this.position.add(new Vector2(Math.floor(window.innerWidth/2), -Math.floor(window.innerHeight/2)));
     }
 }
 
 class Player{
     public static ins: Player = new Player();
-    public position: Vector2 = new Vector2(2**16, 2**16); //Perlin noise starts to break down at 0 and before 2**? - spawn in the about middle of that
+    public position: Vector2 = new Vector2(2**1, 2**1); //Perlin noise starts to break down at 0 and before 2**? - spawn in the about middle of that
     public Speed: number = 3;
 
     public camera: Camera = new Camera(this.position);
@@ -53,6 +53,6 @@ class Player{
     }
     Draw(CameraOffset: Vector2){
         RenderManager.ctx.fillStyle = 'red';
-        RenderManager.ctx.fillRect(this.position.x + CameraOffset.x, this.position.y + CameraOffset.y, Chunk.PixelSize, -Chunk.PixelSize);
+        RenderManager.ctx.fillRect(this.position.x + CameraOffset.x, this.position.y - CameraOffset.y, Chunk.PixelSize, -Chunk.PixelSize);
     }
 }

@@ -29,23 +29,23 @@ class Chunk{
 
         //console.log(`${endTime - startTime} milliseconds`)
     }
-    Draw(CameraOffset: Vector2){
+    Draw(CameraOffset: Vector2, PreviousCameraOffset: Vector2){
         CameraOffset = CameraOffset.add(this.position.multiply(Chunk.ChunkSize*Chunk.PixelSize));
         
         this.data.forEach(data => {
-            RenderManager.ctx.fillStyle = data.color.get();
-            RenderManager.ctx.fillRect(
+            RenderManager.gCtx.fillStyle = data.color.get();
+            RenderManager.gCtx.fillRect(
                 Math.floor(data.position.x * Chunk.PixelSize + CameraOffset.x), 
                 Math.floor(data.position.y * Chunk.PixelSize + CameraOffset.y), Chunk.PixelSize, -Chunk.PixelSize);
         });
         
         //write chunk number on the chunk
-        RenderManager.ctx.save();
-        RenderManager.ctx.scale(1, -1);
-        RenderManager.ctx.fillStyle = "white";
-        RenderManager.ctx.font = "10px Arial";
-        RenderManager.ctx.fillText(`(${this.position.x}, ${this.position.y})`, CameraOffset.x, -CameraOffset.y);
-        RenderManager.ctx.restore();
+        RenderManager.gCtx.save();
+        RenderManager.gCtx.scale(1, -1);
+        RenderManager.gCtx.fillStyle = "white";
+        RenderManager.gCtx.font = "10px Arial";
+        RenderManager.gCtx.fillText(`(${this.position.x}, ${this.position.y})`, CameraOffset.x, -CameraOffset.y);
+        RenderManager.gCtx.restore();
     }
     GetAABB(){
         return new AABB(this.position.multiply(Chunk.ChunkSize), new Vector2(Chunk.ChunkSize, Chunk.ChunkSize));

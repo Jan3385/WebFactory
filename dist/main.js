@@ -200,27 +200,6 @@ class PerlinNoise {
         return new GroundData(new Vector2(x % Chunk.ChunkSize, y % Chunk.ChunkSize), new rgb(color.r, color.g, color.b));
     }
 }
-//TODO: try value noise
-/* generated code lol, good for inspiration or it might just work out of the box idk dont have the time for that now
-function valueNoise(x: number, y: number): number {
-    const intX = Math.floor(x);
-    const intY = Math.floor(y);
-    const fracX = x - intX;
-    const fracY = y - intY;
-  
-    const v1 = randomValue(intX, intY);
-    const v2 = randomValue(intX + 1, intY);
-    const v3 = randomValue(intX, intY + 1);
-    const v4 = randomValue(intX + 1, intY + 1);
-  
-    const i1 = lerp(v1, v2, fracX);
-    const i2 = lerp(v3, v4, fracY);
-    return lerp(i1, i2, fracY);
-  }
-  
-  function lerp(a: number, b: number, t: number): number {
-    return a + t * (b - a);
-  } */
 class ValueNoise {
     static valueNoise = new ValueNoise();
     seed;
@@ -345,19 +324,19 @@ class Chunk {
         let endTime = performance.now();
         //console.log(`${endTime - startTime} milliseconds`)
     }
-    Draw(CameraOffset) {
+    Draw(CameraOffset, PreviousCameraOffset) {
         CameraOffset = CameraOffset.add(this.position.multiply(Chunk.ChunkSize * Chunk.PixelSize));
         this.data.forEach(data => {
-            RenderManager.ctx.fillStyle = data.color.get();
-            RenderManager.ctx.fillRect(Math.floor(data.position.x * Chunk.PixelSize + CameraOffset.x), Math.floor(data.position.y * Chunk.PixelSize + CameraOffset.y), Chunk.PixelSize, -Chunk.PixelSize);
+            RenderManager.gCtx.fillStyle = data.color.get();
+            RenderManager.gCtx.fillRect(Math.floor(data.position.x * Chunk.PixelSize + CameraOffset.x), Math.floor(data.position.y * Chunk.PixelSize + CameraOffset.y), Chunk.PixelSize, -Chunk.PixelSize);
         });
         //write chunk number on the chunk
-        RenderManager.ctx.save();
-        RenderManager.ctx.scale(1, -1);
-        RenderManager.ctx.fillStyle = "white";
-        RenderManager.ctx.font = "10px Arial";
-        RenderManager.ctx.fillText(`(${this.position.x}, ${this.position.y})`, CameraOffset.x, -CameraOffset.y);
-        RenderManager.ctx.restore();
+        RenderManager.gCtx.save();
+        RenderManager.gCtx.scale(1, -1);
+        RenderManager.gCtx.fillStyle = "white";
+        RenderManager.gCtx.font = "10px Arial";
+        RenderManager.gCtx.fillText(`(${this.position.x}, ${this.position.y})`, CameraOffset.x, -CameraOffset.y);
+        RenderManager.gCtx.restore();
     }
     GetAABB() {
         return new AABB(this.position.multiply(Chunk.ChunkSize), new Vector2(Chunk.ChunkSize, Chunk.ChunkSize));
@@ -454,12 +433,12 @@ class Camera {
         MapManager.ins.UpdateChunks();
     }
     GetCameraOffset() {
-        return this.position.flip().add(new Vector2(Math.floor(window.innerWidth / 2), -Math.floor(window.innerHeight / 2)));
+        return this.position.add(new Vector2(Math.floor(window.innerWidth / 2), -Math.floor(window.innerHeight / 2)));
     }
 }
 class Player {
     static ins = new Player();
-    position = new Vector2(2 ** 16, 2 ** 16); //Perlin noise starts to break down at 0 and before 2**? - spawn in the about middle of that
+    position = new Vector2(2 ** 1, 2 ** 1); //Perlin noise starts to break down at 0 and before 2**? - spawn in the about middle of that
     Speed = 3;
     camera = new Camera(this.position);
     constructor() { }
@@ -473,7 +452,7 @@ class Player {
     }
     Draw(CameraOffset) {
         RenderManager.ctx.fillStyle = 'red';
-        RenderManager.ctx.fillRect(this.position.x + CameraOffset.x, this.position.y + CameraOffset.y, Chunk.PixelSize, -Chunk.PixelSize);
+        RenderManager.ctx.fillRect(this.position.x + CameraOffset.x, this.position.y - CameraOffset.y, Chunk.PixelSize, -Chunk.PixelSize);
     }
 }
 /// <reference path="./Math/Math.ts" />
@@ -483,22 +462,31 @@ class RenderManager {
     constructor() {
         window.addEventListener('resize', this.OnWindowResize);
         this.OnWindowResize();
-        RenderManager.ctx.scale(1, -1);
+        RenderManager.gCtx.scale(1, -1);
     }
     static canvas = document.getElementById('GameCanvas');
     static ctx = RenderManager.canvas.getContext('2d', { alpha: false });
+    static GroundRenderCanvas = new OffscreenCanvas(RenderManager.canvas.width, RenderManager.canvas.height);
+    static gCtx = RenderManager.GroundRenderCanvas.getContext('2d', { alpha: false });
     static ins = new RenderManager();
+    PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
     Draw() {
         RenderManager.ctx.fillStyle = "black";
         RenderManager.ctx.fillRect(0, 0, RenderManager.canvas.width, -RenderManager.canvas.height); //test how long this takes
         MapManager.ins.cPlanet.Chunks.forEach(chunk => {
-            chunk.Draw(Player.ins.camera.GetCameraOffset()); //long execution time !!
+            chunk.Draw(Player.ins.camera.GetCameraOffset(), this.PreviousCameraOffset); //long execution time !!
         });
+        RenderManager.gCtx.fillStyle = "Blue";
+        RenderManager.gCtx.fillRect(0, 0, 30, 30);
+        RenderManager.ctx.drawImage(RenderManager.GroundRenderCanvas, 0, 0);
         Player.ins.Draw(Player.ins.camera.GetCameraOffset());
+        this.PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
     }
     OnWindowResize() {
         RenderManager.canvas.width = window.innerWidth;
         RenderManager.canvas.height = window.innerHeight;
+        RenderManager.GroundRenderCanvas.width = window.innerWidth;
+        RenderManager.GroundRenderCanvas.height = window.innerHeight;
     }
 }
 let ExecTimeStarts = [];

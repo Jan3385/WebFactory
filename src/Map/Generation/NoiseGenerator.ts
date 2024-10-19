@@ -115,29 +115,7 @@ class PerlinNoise {
         return new GroundData(new Vector2(x%Chunk.ChunkSize, y%Chunk.ChunkSize), new rgb(color.r, color.g, color.b));
     }
 }
-//TODO: try value noise
-
-/* generated code lol, good for inspiration or it might just work out of the box idk dont have the time for that now
-function valueNoise(x: number, y: number): number {
-    const intX = Math.floor(x);
-    const intY = Math.floor(y);
-    const fracX = x - intX;
-    const fracY = y - intY;
-  
-    const v1 = randomValue(intX, intY);
-    const v2 = randomValue(intX + 1, intY);
-    const v3 = randomValue(intX, intY + 1);
-    const v4 = randomValue(intX + 1, intY + 1);
-  
-    const i1 = lerp(v1, v2, fracX);
-    const i2 = lerp(v3, v4, fracY);
-    return lerp(i1, i2, fracY);
-  }
-  
-  function lerp(a: number, b: number, t: number): number {
-    return a + t * (b - a);
-  } */
- class ValueNoise{
+class ValueNoise{
     public static valueNoise: ValueNoise = new ValueNoise();
     seed: number;
     permutation: number[];
