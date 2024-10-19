@@ -29,23 +29,30 @@ class Chunk{
 
         //console.log(`${endTime - startTime} milliseconds`)
     }
-    Draw(CameraOffset: Vector2, PreviousCameraOffset: Vector2){
+    ;Draw(CameraOffset: Vector2, PreviousCameraOffset: Vector2){
         CameraOffset = CameraOffset.add(this.position.multiply(Chunk.ChunkSize*Chunk.PixelSize));
         
         this.data.forEach(data => {
             RenderManager.gCtx.fillStyle = data.color.get();
             RenderManager.gCtx.fillRect(
                 Math.floor(data.position.x * Chunk.PixelSize + CameraOffset.x), 
-                Math.floor(data.position.y * Chunk.PixelSize + CameraOffset.y), Chunk.PixelSize, -Chunk.PixelSize);
+                Math.floor(data.position.y * Chunk.PixelSize + CameraOffset.y + Chunk.PixelSize), Chunk.PixelSize, -Chunk.PixelSize); //idk why there needs to be that +Chunk.PixelSize but it is off without it
         });
         
         //write chunk number on the chunk
-        RenderManager.gCtx.save();
-        RenderManager.gCtx.scale(1, -1);
         RenderManager.gCtx.fillStyle = "white";
         RenderManager.gCtx.font = "10px Arial";
-        RenderManager.gCtx.fillText(`(${this.position.x}, ${this.position.y})`, CameraOffset.x, -CameraOffset.y);
-        RenderManager.gCtx.restore();
+        RenderManager.gCtx.fillText(`(${this.position.x}, ${this.position.y})`, CameraOffset.x, CameraOffset.y+Chunk.ChunkSize*Chunk.PixelSize-5);
+
+        //box at the 0,0 of the chunk
+        RenderManager.gCtx.fillStyle = "red";
+        RenderManager.gCtx.fillRect(CameraOffset.x, CameraOffset.y, 5, 5);
+
+
+        //draw chunk border
+        RenderManager.gCtx.strokeStyle = "Blue";
+        RenderManager.gCtx.lineWidth = 3;
+        RenderManager.gCtx.strokeRect(CameraOffset.x, CameraOffset.y, Chunk.ChunkSize*Chunk.PixelSize, Chunk.ChunkSize*Chunk.PixelSize);
     }
     GetAABB(){
         return new AABB(this.position.multiply(Chunk.ChunkSize), new Vector2(Chunk.ChunkSize, Chunk.ChunkSize));

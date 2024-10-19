@@ -122,12 +122,14 @@ window.addEventListener("keyup", onKeyUp, false);
 
 function onMouseDown(event: MouseEvent){
     const mousePos: Vector2 = new Vector2(event.clientX, event.clientY);
-    const worldPixelPos: Vector2 =  mousePos.subtract(Player.ins.camera.GetCameraOffset().flipY());
-    const voxelPos: Vector2 = mousePos.subtract(Player.ins.camera.GetCameraOffset().flipY()).divideAndFloor(Chunk.PixelSize);
-    console.log(voxelPos)
+    const worldPixelPos: Vector2 =  mousePos.subtract(Player.ins.camera.GetCameraOffset());
+    const voxelPos: Vector2 = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
+    const chunkPos: Vector2 = voxelPos.divideAndFloor(Chunk.ChunkSize);
 
-    //const color = MapManager.ins.cPlanet.GetDataAt(voxelPos.x, voxelPos.y)?.color;
-    //console.log('%c color', `background: ${color?.get()}; color: ${color?.get()}`);
+    console.log(voxelPos);
+
+    const color = MapManager.ins.cPlanet.GetDataAt(voxelPos.x, voxelPos.y)?.color;
+    console.log('%c color', `background: ${color?.get()}; color: ${color?.get()}`);
 }
 function onMouseUp(event: MouseEvent){
     

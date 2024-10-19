@@ -6,7 +6,6 @@ class RenderManager{
     private constructor() {
         window.addEventListener('resize', this.OnWindowResize);
         this.OnWindowResize();
-        RenderManager.gCtx.scale(1, -1);
     }
 
     private static canvas: HTMLCanvasElement = <HTMLCanvasElement>document.getElementById('GameCanvas')!;
@@ -24,9 +23,7 @@ class RenderManager{
         MapManager.ins.cPlanet.Chunks.forEach(chunk => {
             chunk.Draw(Player.ins.camera.GetCameraOffset(), this.PreviousCameraOffset); //long execution time !!
         });
-
-        RenderManager.gCtx.fillStyle = "Blue";
-        RenderManager.gCtx.fillRect(0, 0,30, 30);
+        
         RenderManager.ctx.drawImage(RenderManager.GroundRenderCanvas, 0, 0);
 
         Player.ins.Draw(Player.ins.camera.GetCameraOffset());

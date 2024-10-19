@@ -23,7 +23,7 @@ class Camera{
             new AABB(
                 new Vector2(
                     (this.position.x - window.innerWidth/2) / Chunk.PixelSize,
-                    (this.position.y - window.innerHeight/2) / Chunk.PixelSize),
+                    -(this.position.y - window.innerHeight/2) / Chunk.PixelSize),
                 new Vector2( 
                         (window.outerWidth) / Chunk.PixelSize,
                         (window.outerHeight) / Chunk.PixelSize),
@@ -31,13 +31,13 @@ class Camera{
         MapManager.ins.UpdateChunks();
     }
     GetCameraOffset(){
-        return this.position.add(new Vector2(Math.floor(window.innerWidth/2), -Math.floor(window.innerHeight/2)));
+        return this.position.flipX().add(new Vector2(Math.floor(window.innerWidth/2), -Math.floor(window.innerHeight/2)));
     }
 }
 
 class Player{
     public static ins: Player = new Player();
-    public position: Vector2 = new Vector2(2**1, 2**1); //Perlin noise starts to break down at 0 and before 2**? - spawn in the about middle of that
+    public position: Vector2 = new Vector2(2**16, -(2**16)); //Perlin noise starts to break down at 0 and before 2**? - spawn in the about middle of that
     public Speed: number = 3;
 
     public camera: Camera = new Camera(this.position);

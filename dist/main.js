@@ -324,19 +324,24 @@ class Chunk {
         let endTime = performance.now();
         //console.log(`${endTime - startTime} milliseconds`)
     }
+    ;
     Draw(CameraOffset, PreviousCameraOffset) {
         CameraOffset = CameraOffset.add(this.position.multiply(Chunk.ChunkSize * Chunk.PixelSize));
         this.data.forEach(data => {
             RenderManager.gCtx.fillStyle = data.color.get();
-            RenderManager.gCtx.fillRect(Math.floor(data.position.x * Chunk.PixelSize + CameraOffset.x), Math.floor(data.position.y * Chunk.PixelSize + CameraOffset.y), Chunk.PixelSize, -Chunk.PixelSize);
+            RenderManager.gCtx.fillRect(Math.floor(data.position.x * Chunk.PixelSize + CameraOffset.x), Math.floor(data.position.y * Chunk.PixelSize + CameraOffset.y + Chunk.PixelSize), Chunk.PixelSize, -Chunk.PixelSize); //idk why there needs to be that +Chunk.PixelSize but it is off without it
         });
         //write chunk number on the chunk
-        RenderManager.gCtx.save();
-        RenderManager.gCtx.scale(1, -1);
         RenderManager.gCtx.fillStyle = "white";
         RenderManager.gCtx.font = "10px Arial";
-        RenderManager.gCtx.fillText(`(${this.position.x}, ${this.position.y})`, CameraOffset.x, -CameraOffset.y);
-        RenderManager.gCtx.restore();
+        RenderManager.gCtx.fillText(`(${this.position.x}, ${this.position.y})`, CameraOffset.x, CameraOffset.y + Chunk.ChunkSize * Chunk.PixelSize - 5);
+        //box at the 0,0 of the chunk
+        RenderManager.gCtx.fillStyle = "red";
+        RenderManager.gCtx.fillRect(CameraOffset.x, CameraOffset.y, 5, 5);
+        //draw chunk border
+        RenderManager.gCtx.strokeStyle = "Blue";
+        RenderManager.gCtx.lineWidth = 3;
+        RenderManager.gCtx.strokeRect(CameraOffset.x, CameraOffset.y, Chunk.ChunkSize * Chunk.PixelSize, Chunk.ChunkSize * Chunk.PixelSize);
     }
     GetAABB() {
         return new AABB(this.position.multiply(Chunk.ChunkSize), new Vector2(Chunk.ChunkSize, Chunk.ChunkSize));
@@ -359,10 +364,10 @@ class Planet {
     constructor() {
     }
     GetDataAt(x, y) {
-        const chunkPos = new Vector2(Math.floor(x / Chunk.ChunkSize), Math.floor(y * -1 / Chunk.ChunkSize));
+        const chunkPos = new Vector2(Math.floor(x / Chunk.ChunkSize), Math.floor(y / Chunk.ChunkSize));
         const chunk = this.Chunks.find(chunk => chunk.position.x == chunkPos.x && chunk.position.y == chunkPos.y);
         if (chunk) {
-            return chunk.data.find((data) => data.position.x === x % Chunk.ChunkSize && data.position.y === y * -1 % Chunk.ChunkSize);
+            return chunk.data.find((data) => data.position.x === x % Chunk.ChunkSize && data.position.y === y % Chunk.ChunkSize);
         }
         return null;
     }
@@ -429,16 +434,16 @@ class Camera {
     UpdateCamera() {
         this.position = Player.ins.position;
         this.AABB =
-            new AABB(new Vector2((this.position.x - window.innerWidth / 2) / Chunk.PixelSize, (this.position.y - window.innerHeight / 2) / Chunk.PixelSize), new Vector2((window.outerWidth) / Chunk.PixelSize, (window.outerHeight) / Chunk.PixelSize));
+            new AABB(new Vector2((this.position.x - window.innerWidth / 2) / Chunk.PixelSize, -(this.position.y - window.innerHeight / 2) / Chunk.PixelSize), new Vector2((window.outerWidth) / Chunk.PixelSize, (window.outerHeight) / Chunk.PixelSize));
         MapManager.ins.UpdateChunks();
     }
     GetCameraOffset() {
-        return this.position.add(new Vector2(Math.floor(window.innerWidth / 2), -Math.floor(window.innerHeight / 2)));
+        return this.position.flipX().add(new Vector2(Math.floor(window.innerWidth / 2), -Math.floor(window.innerHeight / 2)));
     }
 }
 class Player {
     static ins = new Player();
-    position = new Vector2(2 ** 1, 2 ** 1); //Perlin noise starts to break down at 0 and before 2**? - spawn in the about middle of that
+    position = new Vector2(2 ** 16, -(2 ** 16)); //Perlin noise starts to break down at 0 and before 2**? - spawn in the about middle of that
     Speed = 3;
     camera = new Camera(this.position);
     constructor() { }
@@ -462,7 +467,6 @@ class RenderManager {
     constructor() {
         window.addEventListener('resize', this.OnWindowResize);
         this.OnWindowResize();
-        RenderManager.gCtx.scale(1, -1);
     }
     static canvas = document.getElementById('GameCanvas');
     static ctx = RenderManager.canvas.getContext('2d', { alpha: false });
@@ -476,8 +480,6 @@ class RenderManager {
         MapManager.ins.cPlanet.Chunks.forEach(chunk => {
             chunk.Draw(Player.ins.camera.GetCameraOffset(), this.PreviousCameraOffset); //long execution time !!
         });
-        RenderManager.gCtx.fillStyle = "Blue";
-        RenderManager.gCtx.fillRect(0, 0, 30, 30);
         RenderManager.ctx.drawImage(RenderManager.GroundRenderCanvas, 0, 0);
         Player.ins.Draw(Player.ins.camera.GetCameraOffset());
         this.PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
@@ -623,11 +625,12 @@ window.addEventListener("keyup", onKeyUp, false);
 //Mouse
 function onMouseDown(event) {
     const mousePos = new Vector2(event.clientX, event.clientY);
-    const worldPixelPos = mousePos.subtract(Player.ins.camera.GetCameraOffset().flipY());
-    const voxelPos = mousePos.subtract(Player.ins.camera.GetCameraOffset().flipY()).divideAndFloor(Chunk.PixelSize);
+    const worldPixelPos = mousePos.subtract(Player.ins.camera.GetCameraOffset());
+    const voxelPos = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
+    const chunkPos = voxelPos.divideAndFloor(Chunk.ChunkSize);
     console.log(voxelPos);
-    //const color = MapManager.ins.cPlanet.GetDataAt(voxelPos.x, voxelPos.y)?.color;
-    //console.log('%c color', `background: ${color?.get()}; color: ${color?.get()}`);
+    const color = MapManager.ins.cPlanet.GetDataAt(voxelPos.x, voxelPos.y)?.color;
+    console.log('%c color', `background: ${color?.get()}; color: ${color?.get()}`);
 }
 function onMouseUp(event) {
 }
@@ -649,15 +652,14 @@ async function Main() {
         let startTime = performance.now();
         // Update loop
         UpdateInput();
-        TimeExec(0);
+        //TimeExec(0);
         Player.ins.move(MovementVector.multiply(3)); //updates chunks and moves player
-        TimeExec(0);
-        TimeExec(1);
+        //TimeExec(0);
+        //TimeExec(1);
         RenderManager.ins.Draw(); //long execution time !! 20-30ms
-        TimeExec(1);
+        //TimeExec(1);
         let endTime = performance.now();
         const executionTime = endTime - startTime;
-        console.log(executionTime, (1 / fps * 1000) - executionTime);
         await new Promise(r => setTimeout(r, Math.max((1 / fps * 1000) - executionTime, 0)));
     }
 }
