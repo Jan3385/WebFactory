@@ -40,6 +40,9 @@ class Vector2{
         return [ new Vector2(0, 1), new Vector2(-1, 0), new Vector2(1, 0), new Vector2(0, -1),
             new Vector2(1, 1), new Vector2(-1, 1), new Vector2(1, -1), new Vector2(-1, -1) ];
     }
+    copy(): Vector2{
+        return new Vector2(this.x, this.y);
+    }
 }
 class rgb{
     /**

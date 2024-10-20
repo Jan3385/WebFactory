@@ -46,6 +46,9 @@ class Player{
     move(dir: Vector2){
         this.position = this.position.add(dir.multiply(this.Speed));
         this.camera.UpdateCamera();
+
+        //update mouse indicator
+        InputManager.ins.UpdateMouseIndicator();
     }
     setPosition(pos: Vector2){
         this.position = pos;

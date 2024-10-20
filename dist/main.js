@@ -41,6 +41,9 @@ class Vector2 {
         return [new Vector2(0, 1), new Vector2(-1, 0), new Vector2(1, 0), new Vector2(0, -1),
             new Vector2(1, 1), new Vector2(-1, 1), new Vector2(1, -1), new Vector2(-1, -1)];
     }
+    copy() {
+        return new Vector2(this.x, this.y);
+    }
 }
 class rgb {
     /**
@@ -300,7 +303,7 @@ class Chunk {
     //size of a chunk - number of voxels in a chunk in X or Y
     static ChunkSize = 32;
     //rendered size of individual voxel pixels
-    static PixelSize = 16; //lowering this makes the maximum world size smaller
+    static PixelSize = 18; //lowering this makes the maximum world size smaller
     //left top position in the grid-space
     position;
     data = [];
@@ -468,6 +471,8 @@ class Player {
     move(dir) {
         this.position = this.position.add(dir.multiply(this.Speed));
         this.camera.UpdateCamera();
+        //update mouse indicator
+        InputManager.ins.UpdateMouseIndicator();
     }
     setPosition(pos) {
         this.position = pos;
@@ -503,6 +508,10 @@ class RenderManager {
             chunk.DrawChunkExtras(cameraOffset);
         });
         Player.ins.Draw(Player.ins.camera.GetCameraOffset());
+        //render mouse indicator
+        const IndicatorImg = new Image();
+        IndicatorImg.src = "Images/Indicators/MouseIndicator.png";
+        RenderManager.ctx.drawImage(IndicatorImg, InputManager.ins.mouseIndicatorPos.x * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().x, InputManager.ins.mouseIndicatorPos.y * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().y, Chunk.PixelSize, Chunk.PixelSize);
         this.PreviousCameraAABB = Player.ins.camera.AABB.copy();
         this.PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
     }
@@ -529,12 +538,14 @@ class InputManager {
     inputPresses;
     removeInputValues;
     clearMap;
+    mouseIndicatorPos;
     constructor() {
         this.MovementVector = new Vector2(0, 0);
         this.usedInput = false;
         this.inputPresses = [];
         this.removeInputValues = [];
         this.clearMap = { xMinus: false, xPlus: false, yMinus: false, yPlus: false };
+        this.mouseIndicatorPos = new Vector2(0, 0);
         window.addEventListener("keydown", this.onKeyDown, false);
         window.addEventListener("keyup", this.onKeyUp, false);
         window.addEventListener("mousedown", this.onMouseDown, false);
@@ -666,11 +677,18 @@ class InputManager {
     }
     onMouseUp(event) {
     }
+    previouseMousePos = new Vector2(0, 0);
     onMouseMove(event) {
+        const mousePos = new Vector2(event.clientX, event.clientY);
+        InputManager.ins.previouseMousePos = mousePos.copy();
+        const voxelPos = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
+        //InputManager.ins.UpdateMouseIndicator(mousePos); //already done by player move
     }
     onMouseWheel(event) {
     }
-    UpdateMouseIndicator(voxelPos) {
+    UpdateMouseIndicator(mousePos = InputManager.ins.previouseMousePos) {
+        const voxelPos = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
+        InputManager.ins.mouseIndicatorPos = voxelPos;
     }
 }
 /// <reference path="./Player/Player.ts" />

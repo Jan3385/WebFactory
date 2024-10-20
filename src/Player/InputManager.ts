@@ -8,7 +8,9 @@ class InputManager{
     public inputPresses: string[];
     public removeInputValues: string[];
 
-    clearMap: {xMinus: boolean, xPlus: boolean, yMinus: boolean, yPlus: boolean};
+    public clearMap: {xMinus: boolean, xPlus: boolean, yMinus: boolean, yPlus: boolean};
+
+    public mouseIndicatorPos: Vector2;
 
     constructor() {
         this.MovementVector = new Vector2(0, 0);
@@ -17,6 +19,8 @@ class InputManager{
         this.removeInputValues = [];
 
         this.clearMap = {xMinus: false, xPlus: false, yMinus: false, yPlus: false};
+
+        this.mouseIndicatorPos = new Vector2(0, 0);
 
         window.addEventListener("keydown", this.onKeyDown, false);
         window.addEventListener("keyup", this.onKeyUp, false);
@@ -149,14 +153,20 @@ class InputManager{
     onMouseUp(event: MouseEvent){
         
     }
+    private previouseMousePos: Vector2 = new Vector2(0, 0);
     onMouseMove(event: MouseEvent){
+        const mousePos: Vector2 = new Vector2(event.clientX, event.clientY);
+        InputManager.ins.previouseMousePos = mousePos.copy();
+        const voxelPos: Vector2 = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
 
+        //InputManager.ins.UpdateMouseIndicator(mousePos); //already done by player move
     }  
     onMouseWheel(event: WheelEvent){
         
     }
 
-    UpdateMouseIndicator(voxelPos: Vector2){
-
+    UpdateMouseIndicator(mousePos: Vector2 = InputManager.ins.previouseMousePos){
+        const voxelPos: Vector2 = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
+        InputManager.ins.mouseIndicatorPos = voxelPos;
     }
 }

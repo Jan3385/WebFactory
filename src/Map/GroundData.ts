@@ -6,7 +6,7 @@ class Chunk{
     //size of a chunk - number of voxels in a chunk in X or Y
     public static ChunkSize: number = 32;
     //rendered size of individual voxel pixels
-    public static PixelSize: number = 16; //lowering this makes the maximum world size smaller
+    public static PixelSize: number = 18; //lowering this makes the maximum world size smaller
 
     //left top position in the grid-space
     position: Vector2;
