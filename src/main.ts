@@ -21,7 +21,7 @@ async function Main() {
 
         let endTime = performance.now()
         const executionTime = endTime - startTime;
-        //console.log((1/fps*1000) - executionTime);
+        if(executionTime > 16) console.log("Lag spike!" ,(1/fps*1000) - executionTime);
         await new Promise(r => setTimeout(r, Math.max((1/fps*1000) - executionTime, 0)));
     }
 }
