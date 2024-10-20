@@ -41,7 +41,6 @@ class RenderManager{
     private OnWindowResize(){
         RenderManager.canvas.width = window.innerWidth;
         RenderManager.canvas.height = window.innerHeight;
-        //this.DrawEntireWindow();
-        this.Draw();
+        RenderManager.ins.Draw();
     }
 }
