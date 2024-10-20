@@ -5,7 +5,7 @@ const fps = 60;
 
 async function Main() {
     // Start
-    Player.ins.setPosition(new Vector2(2**16, -(2**16)));
+    Player.ins.move(new Vector2(0, 0)); //updates chunks and moves player
     new RenderManager();
 
     let run: boolean = true;
@@ -21,7 +21,7 @@ async function Main() {
 
         let endTime = performance.now()
         const executionTime = endTime - startTime;
-        console.log((1/fps*1000) - executionTime);
+        //console.log((1/fps*1000) - executionTime);
         await new Promise(r => setTimeout(r, Math.max((1/fps*1000) - executionTime, 0)));
     }
 }

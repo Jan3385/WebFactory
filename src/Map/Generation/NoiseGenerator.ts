@@ -1,5 +1,7 @@
 /// <reference path="../../Math/Math.ts" />
 
+const seed = Math.random() * 1000;
+
 //returns a function that generates a random number between 0 and 1 exclusive using a seed
 function RandomUsingSeed(seed: number) {
     const m: number = 0x80000000; // 2**31
@@ -16,7 +18,7 @@ function RandomUsingSeed(seed: number) {
 }
 
 class PerlinNoise {
-    public static perlin: PerlinNoise = new PerlinNoise(Math.random() * 1000);
+    public static perlin: PerlinNoise = new PerlinNoise(seed);
     rnd: () => number;
     permutation: number[];
     gradients: { x: number, y: number }[];
@@ -115,12 +117,12 @@ class PerlinNoise {
         return new GroundData(new Vector2(x%Chunk.ChunkSize, y%Chunk.ChunkSize), new rgb(color.r, color.g, color.b));
     }
 }
-class ValueNoise{
-    public static valueNoise: ValueNoise = new ValueNoise();
+class ValueNoise{ //looks better for terrain
+    public static valueNoise: ValueNoise = new ValueNoise(seed);
     seed: number;
     permutation: number[];
 
-    constructor(seed: number = Math.random() * 1000) {
+    constructor(seed: number) {
         this.seed = seed;
         this.permutation = this.generatePermutation();
     }
@@ -140,11 +142,6 @@ class ValueNoise{
     // Use a simple fade function for smoother interpolation
     fade(t: number): number {
         return t * t * t * (t * (t * 6 - 15) + 10);  // Smootherstep
-    }
-
-    // Linear interpolation
-    lerp(a: number, b: number, t: number): number {
-        return a + t * (b - a);
     }
 
     // Generate a random value using the precomputed permutation table
@@ -171,12 +168,11 @@ class ValueNoise{
         const v = this.fade(fracY);
 
         // Interpolate between the values
-        const i1 = this.lerp(v1, v2, u);
-        const i2 = this.lerp(v3, v4, u);
-        return this.lerp(i1, i2, v);
+        const i1 = lerp(v1, v2, u);
+        const i2 = lerp(v3, v4, u);
+        return lerp(i1, i2, v);
     }
 
-    // Fractal value noise (optional): adjust the number of octaves for performance
     fractal2d(x: number, y: number, octaves: number): number {
         let total = 0;
         let frequency = 1;
@@ -193,9 +189,9 @@ class ValueNoise{
         return total / maxValue;  // Normalize to [-1, 1]
     }
 
-    // Example usage: Generate terrain colors based on the fractal value noise
+    //Generate terrain colors based on the fractal value noise
     GenerateFractalAt(x: number, y: number) {
-        const value = (this.fractal2d(x/12, y/12, 16)+1)/2;
+        const value = (this.fractal2d(x/16, y/16, 16)+1)/2;
         //ocean <1 - 0.7)
         let t: number = (value - 0.7) / 0.3; //from 0.7 - 1 to 0 - 1
         if(value > 0.7) return {

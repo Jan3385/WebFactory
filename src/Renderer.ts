@@ -36,11 +36,6 @@ class RenderManager{
 
         this.PreviousCameraAABB = Player.ins.camera.AABB.copy();
         this.PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
-
-        //draw camera AABB
-        RenderManager.ctx.strokeStyle = "white";
-        RenderManager.ctx.lineWidth = 10;
-        RenderManager.ctx.strokeRect(Player.ins.camera.AABB.x*Chunk.PixelSize*Chunk.ChunkSize, Player.ins.camera.AABB.y*Chunk.PixelSize*Chunk.ChunkSize, Player.ins.camera.AABB.width*Chunk.PixelSize, -Player.ins.camera.AABB.height*Chunk.PixelSize);
     }
 
     private OnWindowResize(){

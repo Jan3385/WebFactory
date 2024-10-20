@@ -6,7 +6,7 @@ class Chunk{
     //size of a chunk - number of voxels in a chunk in X or Y
     public static ChunkSize: number = 32;
     //rendered size of individual voxel pixels
-    public static PixelSize: number = 14;
+    public static PixelSize: number = 16; //lowering this makes the maximum world size smaller
 
     //left top position in the grid-space
     position: Vector2;
@@ -27,42 +27,17 @@ class Chunk{
         }
         this.PreDrawChunk();
     }
-    //Draw(CameraOffset: Vector2){
-    //    CameraOffset = CameraOffset.add(this.position.multiply(Chunk.ChunkSize*Chunk.PixelSize));
-    //    
-    //    this.data.forEach(data => {
-    //        RenderManager.gCtx.fillStyle = data.color.get();
-    //        RenderManager.gCtx.fillRect(
-    //            Math.floor(data.position.x * Chunk.PixelSize + CameraOffset.x), 
-    //            Math.floor(data.position.y * Chunk.PixelSize + CameraOffset.y), Chunk.PixelSize, Chunk.PixelSize); //idk why there needs to be that +Chunk.PixelSize but it is off without it
-    //    });
-    //    this.DrawChunkExtras(CameraOffset);
-    //}
     PreDrawChunk(){
         this.data.forEach(data => {
             this.chunkRenderCtx.fillStyle = data.color.get();
             this.chunkRenderCtx.fillRect(
                 Math.floor(data.position.x * Chunk.PixelSize), 
-                Math.floor(data.position.y * Chunk.PixelSize), Chunk.PixelSize, Chunk.PixelSize); //idk why there needs to be that +Chunk.PixelSize but it is off without it
+                Math.floor(data.position.y * Chunk.PixelSize), Chunk.PixelSize, Chunk.PixelSize);
         });
     }
     GetChunkRender(): OffscreenCanvas{
         return this.chunkRender;
     }
-    //DrawOnlyRequired(CameraOffset: Vector2, CurrentCameraAABB: AABB, PreviousCameraAABB: AABB){
-    //    //if(this.GetAABB().isInside(CurrentCameraAABB)) return;
-    //    if(this.GetAABB().isInside(CurrentCameraAABB)) return;
-    //    console.log(this.position)
-    //    CameraOffset = CameraOffset.add(this.position.multiply(Chunk.ChunkSize*Chunk.PixelSize));
-    //    
-    //    this.data.forEach(data => {
-    //        RenderManager.gCtx.fillStyle = data.color.get();
-    //        RenderManager.gCtx.fillRect(
-    //            Math.floor(data.position.x * Chunk.PixelSize + CameraOffset.x), 
-    //            Math.floor(data.position.y * Chunk.PixelSize + CameraOffset.y), Chunk.PixelSize, Chunk.PixelSize);
-    //    });
-    //    this.DrawChunkExtras(CameraOffset);
-    //}
     DrawChunkExtras(CameraOffset: Vector2){
         CameraOffset = CameraOffset.add(this.position.multiply(Chunk.ChunkSize*Chunk.PixelSize));
         //write chunk number on the chunk
