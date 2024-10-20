@@ -1,28 +1,27 @@
 /// <reference path="./Player/Player.ts" />
 /// <reference path="./Player/InputManager.ts" />
 
-const fps = 60; //can run stable at only 20fps :(
+const fps = 60;
 
 async function Main() {
     // Start
-
+    Player.ins.setPosition(new Vector2(2**16, -(2**16)));
+    new RenderManager();
 
     let run: boolean = true;
     while (run) {
-        let startTime = performance.now()
-
         // Update loop
-        UpdateInput();
-        //TimeExec(0);
-        Player.ins.move(MovementVector.multiply(3)); //updates chunks and moves player
-        //TimeExec(0);
+        let startTime = performance.now();
 
-        //TimeExec(1);
-        RenderManager.ins.Draw(); //long execution time !! 20-30ms
-        //TimeExec(1);
+        UpdateInput();
+
+        Player.ins.move(MovementVector.multiply(3)); //updates chunks and moves player
+
+        RenderManager.ins.Draw(); // draws everything
 
         let endTime = performance.now()
         const executionTime = endTime - startTime;
+        console.log((1/fps*1000) - executionTime);
         await new Promise(r => setTimeout(r, Math.max((1/fps*1000) - executionTime, 0)));
     }
 }

@@ -308,43 +308,75 @@ class Chunk {
     //left top position in the grid-space
     position;
     data = [];
+    chunkRender;
+    chunkRenderCtx;
     constructor(position) {
         this.position = position;
+        this.chunkRender = new OffscreenCanvas(Chunk.ChunkSize * Chunk.PixelSize, Chunk.ChunkSize * Chunk.PixelSize);
+        this.chunkRenderCtx = this.chunkRender.getContext('2d', { alpha: false });
         this.Load();
     }
     Load() {
-        let startTime = performance.now();
         for (let y = 0; y < Chunk.ChunkSize; y++) {
             for (let x = 0; x < Chunk.ChunkSize; x++) {
-                //if(x == 0) this.data.push(new GroundData(new Vector2(x, y), new rgb(255, 255, 255)));
-                //else this.data.push(PerlinNoise.perlin.GetGroundDataAt(x + this.position.x * Chunk.ChunkSize, y + this.position.y * Chunk.ChunkSize));
                 this.data.push(ValueNoise.valueNoise.GetGroundDataAt(x + this.position.x * Chunk.ChunkSize, y + this.position.y * Chunk.ChunkSize));
             }
         }
-        let endTime = performance.now();
-        //console.log(`${endTime - startTime} milliseconds`)
+        this.PreDrawChunk();
     }
-    ;
-    Draw(CameraOffset, PreviousCameraOffset) {
-        CameraOffset = CameraOffset.add(this.position.multiply(Chunk.ChunkSize * Chunk.PixelSize));
+    //Draw(CameraOffset: Vector2){
+    //    CameraOffset = CameraOffset.add(this.position.multiply(Chunk.ChunkSize*Chunk.PixelSize));
+    //    
+    //    this.data.forEach(data => {
+    //        RenderManager.gCtx.fillStyle = data.color.get();
+    //        RenderManager.gCtx.fillRect(
+    //            Math.floor(data.position.x * Chunk.PixelSize + CameraOffset.x), 
+    //            Math.floor(data.position.y * Chunk.PixelSize + CameraOffset.y), Chunk.PixelSize, Chunk.PixelSize); //idk why there needs to be that +Chunk.PixelSize but it is off without it
+    //    });
+    //    this.DrawChunkExtras(CameraOffset);
+    //}
+    PreDrawChunk() {
         this.data.forEach(data => {
-            RenderManager.gCtx.fillStyle = data.color.get();
-            RenderManager.gCtx.fillRect(Math.floor(data.position.x * Chunk.PixelSize + CameraOffset.x), Math.floor(data.position.y * Chunk.PixelSize + CameraOffset.y + Chunk.PixelSize), Chunk.PixelSize, -Chunk.PixelSize); //idk why there needs to be that +Chunk.PixelSize but it is off without it
+            this.chunkRenderCtx.fillStyle = data.color.get();
+            this.chunkRenderCtx.fillRect(Math.floor(data.position.x * Chunk.PixelSize), Math.floor(data.position.y * Chunk.PixelSize), Chunk.PixelSize, Chunk.PixelSize); //idk why there needs to be that +Chunk.PixelSize but it is off without it
         });
+    }
+    GetChunkRender() {
+        return this.chunkRender;
+    }
+    //DrawOnlyRequired(CameraOffset: Vector2, CurrentCameraAABB: AABB, PreviousCameraAABB: AABB){
+    //    //if(this.GetAABB().isInside(CurrentCameraAABB)) return;
+    //    if(this.GetAABB().isInside(CurrentCameraAABB)) return;
+    //    console.log(this.position)
+    //    CameraOffset = CameraOffset.add(this.position.multiply(Chunk.ChunkSize*Chunk.PixelSize));
+    //    
+    //    this.data.forEach(data => {
+    //        RenderManager.gCtx.fillStyle = data.color.get();
+    //        RenderManager.gCtx.fillRect(
+    //            Math.floor(data.position.x * Chunk.PixelSize + CameraOffset.x), 
+    //            Math.floor(data.position.y * Chunk.PixelSize + CameraOffset.y), Chunk.PixelSize, Chunk.PixelSize);
+    //    });
+    //    this.DrawChunkExtras(CameraOffset);
+    //}
+    DrawChunkExtras(CameraOffset) {
+        CameraOffset = CameraOffset.add(this.position.multiply(Chunk.ChunkSize * Chunk.PixelSize));
         //write chunk number on the chunk
-        RenderManager.gCtx.fillStyle = "white";
-        RenderManager.gCtx.font = "10px Arial";
-        RenderManager.gCtx.fillText(`(${this.position.x}, ${this.position.y})`, CameraOffset.x, CameraOffset.y + Chunk.ChunkSize * Chunk.PixelSize - 5);
+        RenderManager.ctx.fillStyle = "white";
+        RenderManager.ctx.font = "10px Arial";
+        RenderManager.ctx.fillText(`(${this.position.x}, ${this.position.y})`, CameraOffset.x, CameraOffset.y + Chunk.ChunkSize * Chunk.PixelSize - 5);
         //box at the 0,0 of the chunk
-        RenderManager.gCtx.fillStyle = "red";
-        RenderManager.gCtx.fillRect(CameraOffset.x, CameraOffset.y, 5, 5);
+        RenderManager.ctx.fillStyle = "red";
+        RenderManager.ctx.fillRect(CameraOffset.x, CameraOffset.y, 5, 5);
         //draw chunk border
-        RenderManager.gCtx.strokeStyle = "Blue";
-        RenderManager.gCtx.lineWidth = 3;
-        RenderManager.gCtx.strokeRect(CameraOffset.x, CameraOffset.y, Chunk.ChunkSize * Chunk.PixelSize, Chunk.ChunkSize * Chunk.PixelSize);
+        if (this.position.x != 2 || this.position.y != 1)
+            return;
+        RenderManager.ctx.strokeStyle = "Blue";
+        RenderManager.ctx.lineWidth = 5;
+        RenderManager.ctx.strokeRect(CameraOffset.x + 1, CameraOffset.y + 1, this.GetAABB().width * Chunk.PixelSize - 1, this.GetAABB().height * Chunk.PixelSize - 1);
     }
     GetAABB() {
-        return new AABB(this.position.multiply(Chunk.ChunkSize), new Vector2(Chunk.ChunkSize, Chunk.ChunkSize));
+        //return new AABB(this.position.multiply(Chunk.ChunkSize), new Vector2(Chunk.ChunkSize, Chunk.ChunkSize));
+        return new AABB(new Vector2(this.position.x * Chunk.ChunkSize, this.position.y * Chunk.ChunkSize), new Vector2(Chunk.ChunkSize, Chunk.ChunkSize));
     }
 }
 class GroundData {
@@ -417,6 +449,21 @@ class AABB {
             this.y < other.y + other.height &&
             this.y + this.height > other.y);
     }
+    isInside(other) {
+        return (this.x >= other.x &&
+            this.x + this.width <= other.x + other.width &&
+            this.y >= other.y &&
+            this.y + this.height <= other.y + other.height);
+    }
+    isDotInside(x, y) {
+        return (this.x <= x &&
+            this.x + this.width >= x &&
+            this.y <= y &&
+            this.y + this.height >= y);
+    }
+    copy() {
+        return new AABB(new Vector2(this.x, this.y), new Vector2(this.width, this.height));
+    }
 }
 /// <reference path="../Math/AABB.ts" />
 class Camera {
@@ -464,31 +511,39 @@ class Player {
 /// <reference path="./Map/MapManager.ts" />
 /// <reference path="./Player/Player.ts" />
 class RenderManager {
+    static canvas;
+    static ctx;
+    static ins;
     constructor() {
+        RenderManager.canvas = document.getElementById('GameCanvas');
+        RenderManager.ctx = RenderManager.canvas.getContext('2d', { alpha: false });
+        RenderManager.ins = this;
         window.addEventListener('resize', this.OnWindowResize);
         this.OnWindowResize();
     }
-    static canvas = document.getElementById('GameCanvas');
-    static ctx = RenderManager.canvas.getContext('2d', { alpha: false });
-    static GroundRenderCanvas = new OffscreenCanvas(RenderManager.canvas.width, RenderManager.canvas.height);
-    static gCtx = RenderManager.GroundRenderCanvas.getContext('2d', { alpha: false });
-    static ins = new RenderManager();
     PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
+    PreviousCameraAABB = Player.ins.camera.AABB.copy();
     Draw() {
-        RenderManager.ctx.fillStyle = "black";
-        RenderManager.ctx.fillRect(0, 0, RenderManager.canvas.width, -RenderManager.canvas.height); //test how long this takes
+        const FrameOffset = Player.ins.camera.GetCameraOffset().subtract(this.PreviousCameraOffset);
+        const cameraOffset = Player.ins.camera.GetCameraOffset();
         MapManager.ins.cPlanet.Chunks.forEach(chunk => {
-            chunk.Draw(Player.ins.camera.GetCameraOffset(), this.PreviousCameraOffset); //long execution time !!
+            const chunkRender = chunk.GetChunkRender();
+            RenderManager.ctx.drawImage(chunkRender, chunk.position.x * Chunk.ChunkSize * Chunk.PixelSize + cameraOffset.x, chunk.position.y * Chunk.ChunkSize * Chunk.PixelSize + cameraOffset.y);
+            chunk.DrawChunkExtras(cameraOffset);
         });
-        RenderManager.ctx.drawImage(RenderManager.GroundRenderCanvas, 0, 0);
         Player.ins.Draw(Player.ins.camera.GetCameraOffset());
+        this.PreviousCameraAABB = Player.ins.camera.AABB.copy();
         this.PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
+        //draw camera AABB
+        RenderManager.ctx.strokeStyle = "white";
+        RenderManager.ctx.lineWidth = 10;
+        RenderManager.ctx.strokeRect(Player.ins.camera.AABB.x * Chunk.PixelSize * Chunk.ChunkSize, Player.ins.camera.AABB.y * Chunk.PixelSize * Chunk.ChunkSize, Player.ins.camera.AABB.width * Chunk.PixelSize, -Player.ins.camera.AABB.height * Chunk.PixelSize);
     }
     OnWindowResize() {
         RenderManager.canvas.width = window.innerWidth;
         RenderManager.canvas.height = window.innerHeight;
-        RenderManager.GroundRenderCanvas.width = window.innerWidth;
-        RenderManager.GroundRenderCanvas.height = window.innerHeight;
+        //this.DrawEntireWindow();
+        this.Draw();
     }
 }
 let ExecTimeStarts = [];
@@ -644,22 +699,21 @@ window.addEventListener("mousemove", onMouseMove, false);
 window.addEventListener("wheel", onMouseWheel, false);
 /// <reference path="./Player/Player.ts" />
 /// <reference path="./Player/InputManager.ts" />
-const fps = 60; //can run stable at only 20fps :(
+const fps = 60;
 async function Main() {
     // Start
+    Player.ins.setPosition(new Vector2(2 ** 16, -(2 ** 16)));
+    new RenderManager();
     let run = true;
     while (run) {
-        let startTime = performance.now();
         // Update loop
+        let startTime = performance.now();
         UpdateInput();
-        //TimeExec(0);
         Player.ins.move(MovementVector.multiply(3)); //updates chunks and moves player
-        //TimeExec(0);
-        //TimeExec(1);
-        RenderManager.ins.Draw(); //long execution time !! 20-30ms
-        //TimeExec(1);
+        RenderManager.ins.Draw(); // draws everything
         let endTime = performance.now();
         const executionTime = endTime - startTime;
+        console.log((1 / fps * 1000) - executionTime);
         await new Promise(r => setTimeout(r, Math.max((1 / fps * 1000) - executionTime, 0)));
     }
 }

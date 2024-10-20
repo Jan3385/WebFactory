@@ -11,51 +11,82 @@ class Chunk{
     //left top position in the grid-space
     position: Vector2;
     data: GroundData[] = [];
+    private chunkRender: OffscreenCanvas;
+    private chunkRenderCtx: OffscreenCanvasRenderingContext2D;
     constructor(position: Vector2) {
         this.position = position;
+        this.chunkRender = new OffscreenCanvas(Chunk.ChunkSize*Chunk.PixelSize, Chunk.ChunkSize*Chunk.PixelSize);
+        this.chunkRenderCtx = this.chunkRender.getContext('2d', {alpha: false})!
         this.Load();
     }
     Load(){
-        
-        let startTime = performance.now()
         for(let y = 0; y < Chunk.ChunkSize; y++){
             for(let x = 0; x < Chunk.ChunkSize; x++){
-                //if(x == 0) this.data.push(new GroundData(new Vector2(x, y), new rgb(255, 255, 255)));
-                //else this.data.push(PerlinNoise.perlin.GetGroundDataAt(x + this.position.x * Chunk.ChunkSize, y + this.position.y * Chunk.ChunkSize));
                 this.data.push(ValueNoise.valueNoise.GetGroundDataAt(x + this.position.x * Chunk.ChunkSize, y + this.position.y * Chunk.ChunkSize));
             }
         }
-        let endTime = performance.now()
-
-        //console.log(`${endTime - startTime} milliseconds`)
+        this.PreDrawChunk();
     }
-    ;Draw(CameraOffset: Vector2, PreviousCameraOffset: Vector2){
-        CameraOffset = CameraOffset.add(this.position.multiply(Chunk.ChunkSize*Chunk.PixelSize));
-        
+    //Draw(CameraOffset: Vector2){
+    //    CameraOffset = CameraOffset.add(this.position.multiply(Chunk.ChunkSize*Chunk.PixelSize));
+    //    
+    //    this.data.forEach(data => {
+    //        RenderManager.gCtx.fillStyle = data.color.get();
+    //        RenderManager.gCtx.fillRect(
+    //            Math.floor(data.position.x * Chunk.PixelSize + CameraOffset.x), 
+    //            Math.floor(data.position.y * Chunk.PixelSize + CameraOffset.y), Chunk.PixelSize, Chunk.PixelSize); //idk why there needs to be that +Chunk.PixelSize but it is off without it
+    //    });
+    //    this.DrawChunkExtras(CameraOffset);
+    //}
+    PreDrawChunk(){
         this.data.forEach(data => {
-            RenderManager.gCtx.fillStyle = data.color.get();
-            RenderManager.gCtx.fillRect(
-                Math.floor(data.position.x * Chunk.PixelSize + CameraOffset.x), 
-                Math.floor(data.position.y * Chunk.PixelSize + CameraOffset.y + Chunk.PixelSize), Chunk.PixelSize, -Chunk.PixelSize); //idk why there needs to be that +Chunk.PixelSize but it is off without it
+            this.chunkRenderCtx.fillStyle = data.color.get();
+            this.chunkRenderCtx.fillRect(
+                Math.floor(data.position.x * Chunk.PixelSize), 
+                Math.floor(data.position.y * Chunk.PixelSize), Chunk.PixelSize, Chunk.PixelSize); //idk why there needs to be that +Chunk.PixelSize but it is off without it
         });
-        
+    }
+    GetChunkRender(): OffscreenCanvas{
+        return this.chunkRender;
+    }
+    //DrawOnlyRequired(CameraOffset: Vector2, CurrentCameraAABB: AABB, PreviousCameraAABB: AABB){
+    //    //if(this.GetAABB().isInside(CurrentCameraAABB)) return;
+    //    if(this.GetAABB().isInside(CurrentCameraAABB)) return;
+    //    console.log(this.position)
+    //    CameraOffset = CameraOffset.add(this.position.multiply(Chunk.ChunkSize*Chunk.PixelSize));
+    //    
+    //    this.data.forEach(data => {
+    //        RenderManager.gCtx.fillStyle = data.color.get();
+    //        RenderManager.gCtx.fillRect(
+    //            Math.floor(data.position.x * Chunk.PixelSize + CameraOffset.x), 
+    //            Math.floor(data.position.y * Chunk.PixelSize + CameraOffset.y), Chunk.PixelSize, Chunk.PixelSize);
+    //    });
+    //    this.DrawChunkExtras(CameraOffset);
+    //}
+    DrawChunkExtras(CameraOffset: Vector2){
+        CameraOffset = CameraOffset.add(this.position.multiply(Chunk.ChunkSize*Chunk.PixelSize));
         //write chunk number on the chunk
-        RenderManager.gCtx.fillStyle = "white";
-        RenderManager.gCtx.font = "10px Arial";
-        RenderManager.gCtx.fillText(`(${this.position.x}, ${this.position.y})`, CameraOffset.x, CameraOffset.y+Chunk.ChunkSize*Chunk.PixelSize-5);
+        RenderManager.ctx.fillStyle = "white";
+        RenderManager.ctx.font = "10px Arial";
+        RenderManager.ctx.fillText(`(${this.position.x}, ${this.position.y})`, CameraOffset.x, CameraOffset.y+Chunk.ChunkSize*Chunk.PixelSize-5);
 
         //box at the 0,0 of the chunk
-        RenderManager.gCtx.fillStyle = "red";
-        RenderManager.gCtx.fillRect(CameraOffset.x, CameraOffset.y, 5, 5);
+        RenderManager.ctx.fillStyle = "red";
+        RenderManager.ctx.fillRect(CameraOffset.x, CameraOffset.y, 5, 5);
 
 
         //draw chunk border
-        RenderManager.gCtx.strokeStyle = "Blue";
-        RenderManager.gCtx.lineWidth = 3;
-        RenderManager.gCtx.strokeRect(CameraOffset.x, CameraOffset.y, Chunk.ChunkSize*Chunk.PixelSize, Chunk.ChunkSize*Chunk.PixelSize);
+        if(this.position.x != 2 || this.position.y != 1) return;
+        RenderManager.ctx.strokeStyle = "Blue";
+        RenderManager.ctx.lineWidth = 5;
+        RenderManager.ctx.strokeRect(CameraOffset.x+1, CameraOffset.y+1, this.GetAABB().width*Chunk.PixelSize - 1, this.GetAABB().height*Chunk.PixelSize - 1);
     }
-    GetAABB(){
-        return new AABB(this.position.multiply(Chunk.ChunkSize), new Vector2(Chunk.ChunkSize, Chunk.ChunkSize));
+    GetAABB(): AABB{
+        //return new AABB(this.position.multiply(Chunk.ChunkSize), new Vector2(Chunk.ChunkSize, Chunk.ChunkSize));
+        return new AABB(
+            new Vector2(this.position.x * Chunk.ChunkSize, this.position.y * Chunk.ChunkSize),
+            new Vector2(Chunk.ChunkSize, Chunk.ChunkSize)
+        )
     }
 }
 class GroundData {
