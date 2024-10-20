@@ -13,9 +13,9 @@ async function Main() {
         // Update loop
         let startTime = performance.now();
 
-        UpdateInput();
+        InputManager.ins.UpdateInput();
 
-        Player.ins.move(MovementVector.multiply(3)); //updates chunks and moves player
+        Player.ins.move(InputManager.ins.MovementVector.multiply(3)); //updates chunks and moves player
 
         RenderManager.ins.Draw(); // draws everything
 
