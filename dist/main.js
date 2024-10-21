@@ -387,7 +387,7 @@ class MapManager {
     constructor() {
         this.cPlanet = new Planet();
     }
-    //Deletes / generates new chunks when needed
+    //Deletes / generates new chunks when needed TODO: make async
     UpdateChunks() {
         this.cPlanet.Chunks.forEach(chunk => {
             if (!Player.ins.camera.AABB.isColliding(chunk.GetAABB())) {
@@ -452,6 +452,7 @@ class Camera {
         this.AABB =
             new AABB(new Vector2((this.position.x - window.innerWidth / 2) / Chunk.PixelSize, (this.position.y - window.innerHeight / 2) / Chunk.PixelSize), new Vector2(window.innerWidth / Chunk.PixelSize, window.innerHeight / Chunk.PixelSize));
     }
+    //moves the camera and updates visible chunks
     UpdateCamera() {
         this.position = Player.ins.position;
         this.AABB =
@@ -464,7 +465,7 @@ class Camera {
 }
 class Player {
     static ins = new Player();
-    position = new Vector2(2 ** 16, -(2 ** 16)); //2**16 default
+    position = new Vector2(2 ** 17, -(2 ** 17)); //2**16 default
     Speed = 3;
     camera = new Camera(this.position);
     constructor() { }
@@ -509,9 +510,9 @@ class RenderManager {
         });
         Player.ins.Draw(Player.ins.camera.GetCameraOffset());
         //render mouse indicator
-        const IndicatorImg = new Image();
+        const IndicatorImg = new Image(Chunk.PixelSize, Chunk.PixelSize);
         IndicatorImg.src = "Images/Indicators/MouseIndicator.png";
-        RenderManager.ctx.drawImage(IndicatorImg, InputManager.ins.mouseIndicatorPos.x * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().x, InputManager.ins.mouseIndicatorPos.y * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().y, Chunk.PixelSize, Chunk.PixelSize);
+        RenderManager.ctx.drawImage(IndicatorImg, InputManager.ins.mouseIndicatorPos.x * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().x, InputManager.ins.mouseIndicatorPos.y * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().y);
         this.PreviousCameraAABB = Player.ins.camera.AABB.copy();
         this.PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
     }
@@ -703,12 +704,13 @@ async function Main() {
         // Update loop
         let startTime = performance.now();
         InputManager.ins.UpdateInput();
+        //long execution time around 17ms
         Player.ins.move(InputManager.ins.MovementVector.multiply(3)); //updates chunks and moves player
         RenderManager.ins.Draw(); // draws everything
         let endTime = performance.now();
         const executionTime = endTime - startTime;
         if (executionTime > 16)
-            console.log("Lag spike!", (1 / fps * 1000) - executionTime);
+            console.log("Lag spike! wait time designated for:", (1 / fps * 1000) - executionTime);
         await new Promise(r => setTimeout(r, Math.max((1 / fps * 1000) - executionTime, 0)));
     }
 }

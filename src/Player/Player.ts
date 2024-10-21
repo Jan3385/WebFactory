@@ -17,6 +17,7 @@ class Camera{
                     window.innerHeight / Chunk.PixelSize),
             );
     }
+    //moves the camera and updates visible chunks
     UpdateCamera(){
         this.position = Player.ins.position;
         this.AABB = 
@@ -28,6 +29,7 @@ class Camera{
                         (window.outerWidth) / Chunk.PixelSize,
                         (window.outerHeight) / Chunk.PixelSize),
             );
+
         MapManager.ins.UpdateChunks();
     }
     GetCameraOffset(){
@@ -37,7 +39,7 @@ class Camera{
 
 class Player{
     public static ins: Player = new Player();
-    public position: Vector2 = new Vector2(2**16, -(2**16)); //2**16 default
+    public position: Vector2 = new Vector2(2**17, -(2**17)); //2**16 default
     public Speed: number = 3;
 
     public camera: Camera = new Camera(this.position);
