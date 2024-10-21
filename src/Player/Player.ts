@@ -18,6 +18,7 @@ class Camera{
                     (window.outerHeight) / Chunk.PixelSize),
             );
     }
+    //moves the camera and updates visible chunks
     UpdateCamera(){
         this.position = Player.ins.position.multiply(Chunk.PixelSize);
         this.AABB = new AABB(
@@ -28,6 +29,7 @@ class Camera{
                     (window.outerWidth) / Chunk.PixelSize,
                     (window.outerHeight) / Chunk.PixelSize),
             );
+
         MapManager.ins.UpdateChunks();
     }
     GetCameraOffset(){

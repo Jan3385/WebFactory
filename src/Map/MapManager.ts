@@ -9,7 +9,7 @@ class MapManager {
     private constructor() {
         this.cPlanet = new Planet();
     }
-    //Deletes / generates new chunks when needed
+    //Deletes / generates new chunks when needed TODO: make async
     UpdateChunks(){
         this.cPlanet.Chunks.forEach(chunk => {
             if(!Player.ins.camera.AABB.isColliding(chunk.GetAABB())){

@@ -387,7 +387,7 @@ class MapManager {
     constructor() {
         this.cPlanet = new Planet();
     }
-    //Deletes / generates new chunks when needed
+    //Deletes / generates new chunks when needed TODO: make async
     UpdateChunks() {
         this.cPlanet.Chunks.forEach(chunk => {
             if (!Player.ins.camera.AABB.isColliding(chunk.GetAABB())) {
@@ -451,6 +451,7 @@ class Camera {
         //Camera AABB in grid-space
         this.AABB = new AABB(new Vector2((this.position.x - window.innerWidth / 2) / Chunk.PixelSize, (this.position.y - window.innerHeight / 2) / Chunk.PixelSize), new Vector2((window.outerWidth) / Chunk.PixelSize, (window.outerHeight) / Chunk.PixelSize));
     }
+    //moves the camera and updates visible chunks
     UpdateCamera() {
         this.position = Player.ins.position.multiply(Chunk.PixelSize);
         this.AABB = new AABB(new Vector2((this.position.x - window.innerWidth / 2) / Chunk.PixelSize, (this.position.y - window.innerHeight / 2) / Chunk.PixelSize), new Vector2((window.outerWidth) / Chunk.PixelSize, (window.outerHeight) / Chunk.PixelSize));
@@ -707,7 +708,7 @@ async function Main() {
         let endTime = performance.now();
         const executionTime = endTime - startTime;
         if (executionTime > 16)
-            console.log("Lag spike!", (1 / fps * 1000) - executionTime);
+            console.log("Lag spike! wait time designated for:", (1 / fps * 1000) - executionTime);
         await new Promise(r => setTimeout(r, Math.max((1 / fps * 1000) - executionTime, 0)));
     }
 }
