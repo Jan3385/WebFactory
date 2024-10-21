@@ -1,7 +1,7 @@
 /// <reference path="./Player/Player.ts" />
 /// <reference path="./Player/InputManager.ts" />
 
-const fps = 60;
+const fps = 50;
 
 async function Main() {
     // Start
@@ -15,7 +15,7 @@ async function Main() {
 
         InputManager.ins.UpdateInput();
 
-        Player.ins.move(InputManager.ins.MovementVector.multiply(3)); //updates chunks and moves player
+        Player.ins.move(InputManager.ins.MovementVector); //updates chunks and moves player   
 
         RenderManager.ins.Draw(); // draws everything
 

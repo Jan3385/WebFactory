@@ -35,8 +35,8 @@ class InputManager{
     onKeyDown(event: KeyboardEvent){
         switch(event.code){
             case "KeyW": //W
-                if(InputManager.ins.MovementVector.y != 1){
-                    InputManager.ins.MovementVector.y = 1;
+                if(InputManager.ins.MovementVector.y != -1){
+                    InputManager.ins.MovementVector.y = -1;
                     InputManager.ins.usedInput = false;
             }
                 break;
@@ -47,8 +47,8 @@ class InputManager{
                 }
                 break;
             case "KeyS": //S
-                if(InputManager.ins.MovementVector.y != -1){
-                    InputManager.ins.MovementVector.y = -1;
+                if(InputManager.ins.MovementVector.y != 1){
+                    InputManager.ins.MovementVector.y = 1;
                     InputManager.ins.usedInput = false;
                 }
                 break;
@@ -73,13 +73,13 @@ class InputManager{
         if(InputManager.ins.usedInput){
             switch(event.code){
                 case "KeyW":
-                    if(InputManager.ins.MovementVector.y == 1) InputManager.ins.MovementVector.y = 0;
+                    if(InputManager.ins.MovementVector.y == -1) InputManager.ins.MovementVector.y = 0;
                     break;
                 case "KeyD":
                     if(InputManager.ins.MovementVector.x == 1) InputManager.ins.MovementVector.x = 0;
                     break;
                 case "KeyS":
-                    if(InputManager.ins.MovementVector.y == -1) InputManager.ins.MovementVector.y = 0;
+                    if(InputManager.ins.MovementVector.y == 1) InputManager.ins.MovementVector.y = 0;
                     break;
                 case "KeyA":
                     if(InputManager.ins.MovementVector.x == -1) InputManager.ins.MovementVector.x = 0;
@@ -94,13 +94,13 @@ class InputManager{
         //if the key was not registered ingame, designate for later removal
         switch(event.code){
             case "KeyS":
-                InputManager.ins.clearMap.yMinus = true;
+                InputManager.ins.clearMap.yPlus = true;
                 break;
             case "KeyD":
                 InputManager.ins.clearMap.xPlus = true;
                 break;
             case "KeyW":
-                InputManager.ins.clearMap.yPlus = true;
+                InputManager.ins.clearMap.yMinus = true;
                 break;
             case "KeyA":
                 InputManager.ins.clearMap.xMinus = true;

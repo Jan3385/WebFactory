@@ -441,7 +441,7 @@ class AABB {
 }
 /// <reference path="../Math/AABB.ts" />
 class Camera {
-    //Camera position in screen-position
+    //Camera position in screen-space-position
     position;
     //Camera AABB in grid-space
     AABB;
@@ -449,24 +449,23 @@ class Camera {
         //Camera position in screen-position
         this.position = pos;
         //Camera AABB in grid-space
-        this.AABB =
-            new AABB(new Vector2((this.position.x - window.innerWidth / 2) / Chunk.PixelSize, (this.position.y - window.innerHeight / 2) / Chunk.PixelSize), new Vector2(window.innerWidth / Chunk.PixelSize, window.innerHeight / Chunk.PixelSize));
+        this.AABB = new AABB(new Vector2((this.position.x - window.innerWidth / 2) / Chunk.PixelSize, (this.position.y - window.innerHeight / 2) / Chunk.PixelSize), new Vector2((window.outerWidth) / Chunk.PixelSize, (window.outerHeight) / Chunk.PixelSize));
     }
     UpdateCamera() {
-        this.position = Player.ins.position;
-        this.AABB =
-            new AABB(new Vector2((this.position.x - window.innerWidth / 2) / Chunk.PixelSize, -(this.position.y - window.innerHeight / 2) / Chunk.PixelSize), new Vector2((window.outerWidth) / Chunk.PixelSize, (window.outerHeight) / Chunk.PixelSize));
+        this.position = Player.ins.position.multiply(Chunk.PixelSize);
+        this.AABB = new AABB(new Vector2((this.position.x - window.innerWidth / 2) / Chunk.PixelSize, (this.position.y - window.innerHeight / 2) / Chunk.PixelSize), new Vector2((window.outerWidth) / Chunk.PixelSize, (window.outerHeight) / Chunk.PixelSize));
         MapManager.ins.UpdateChunks();
     }
     GetCameraOffset() {
-        return this.position.flipX().add(new Vector2(Math.floor(window.innerWidth / 2), -Math.floor(window.innerHeight / 2)));
+        return this.position.flip().add(new Vector2(Math.floor(window.innerWidth / 2), Math.floor(window.innerHeight / 2)));
     }
 }
 class Player {
     static ins = new Player();
-    position = new Vector2(2 ** 16, -(2 ** 16)); //2**16 default
-    Speed = 3;
-    camera = new Camera(this.position);
+    //player position in world position
+    position = new Vector2(0, -(0)); //2**16 default
+    Speed = 0.4;
+    camera = new Camera(this.position.multiply(Chunk.PixelSize));
     constructor() { }
     move(dir) {
         this.position = this.position.add(dir.multiply(this.Speed));
@@ -480,7 +479,7 @@ class Player {
     }
     Draw(CameraOffset) {
         RenderManager.ctx.fillStyle = 'red';
-        RenderManager.ctx.fillRect(this.position.x + CameraOffset.x, this.position.y - CameraOffset.y, Chunk.PixelSize, -Chunk.PixelSize);
+        RenderManager.ctx.fillRect(this.position.x * Chunk.PixelSize + CameraOffset.x, this.position.y * Chunk.PixelSize + CameraOffset.y, Chunk.PixelSize, Chunk.PixelSize);
     }
 }
 /// <reference path="./Math/Math.ts" />
@@ -509,9 +508,9 @@ class RenderManager {
         });
         Player.ins.Draw(Player.ins.camera.GetCameraOffset());
         //render mouse indicator
-        const IndicatorImg = new Image();
-        IndicatorImg.src = "Images/Indicators/MouseIndicator.png";
-        RenderManager.ctx.drawImage(IndicatorImg, InputManager.ins.mouseIndicatorPos.x * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().x, InputManager.ins.mouseIndicatorPos.y * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().y, Chunk.PixelSize, Chunk.PixelSize);
+        const IndicatorImg = new Image(Chunk.PixelSize, Chunk.PixelSize);
+        IndicatorImg.src = "images/indicators/MouseIndicator.png";
+        RenderManager.ctx.drawImage(IndicatorImg, InputManager.ins.mouseIndicatorPos.x * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().x, InputManager.ins.mouseIndicatorPos.y * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().y);
         this.PreviousCameraAABB = Player.ins.camera.AABB.copy();
         this.PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
     }
@@ -557,8 +556,8 @@ class InputManager {
     onKeyDown(event) {
         switch (event.code) {
             case "KeyW": //W
-                if (InputManager.ins.MovementVector.y != 1) {
-                    InputManager.ins.MovementVector.y = 1;
+                if (InputManager.ins.MovementVector.y != -1) {
+                    InputManager.ins.MovementVector.y = -1;
                     InputManager.ins.usedInput = false;
                 }
                 break;
@@ -569,8 +568,8 @@ class InputManager {
                 }
                 break;
             case "KeyS": //S
-                if (InputManager.ins.MovementVector.y != -1) {
-                    InputManager.ins.MovementVector.y = -1;
+                if (InputManager.ins.MovementVector.y != 1) {
+                    InputManager.ins.MovementVector.y = 1;
                     InputManager.ins.usedInput = false;
                 }
                 break;
@@ -595,7 +594,7 @@ class InputManager {
         if (InputManager.ins.usedInput) {
             switch (event.code) {
                 case "KeyW":
-                    if (InputManager.ins.MovementVector.y == 1)
+                    if (InputManager.ins.MovementVector.y == -1)
                         InputManager.ins.MovementVector.y = 0;
                     break;
                 case "KeyD":
@@ -603,7 +602,7 @@ class InputManager {
                         InputManager.ins.MovementVector.x = 0;
                     break;
                 case "KeyS":
-                    if (InputManager.ins.MovementVector.y == -1)
+                    if (InputManager.ins.MovementVector.y == 1)
                         InputManager.ins.MovementVector.y = 0;
                     break;
                 case "KeyA":
@@ -620,13 +619,13 @@ class InputManager {
         //if the key was not registered ingame, designate for later removal
         switch (event.code) {
             case "KeyS":
-                InputManager.ins.clearMap.yMinus = true;
+                InputManager.ins.clearMap.yPlus = true;
                 break;
             case "KeyD":
                 InputManager.ins.clearMap.xPlus = true;
                 break;
             case "KeyW":
-                InputManager.ins.clearMap.yPlus = true;
+                InputManager.ins.clearMap.yMinus = true;
                 break;
             case "KeyA":
                 InputManager.ins.clearMap.xMinus = true;
@@ -693,7 +692,7 @@ class InputManager {
 }
 /// <reference path="./Player/Player.ts" />
 /// <reference path="./Player/InputManager.ts" />
-const fps = 60;
+const fps = 50;
 async function Main() {
     // Start
     Player.ins.move(new Vector2(0, 0)); //updates chunks and moves player
@@ -703,7 +702,7 @@ async function Main() {
         // Update loop
         let startTime = performance.now();
         InputManager.ins.UpdateInput();
-        Player.ins.move(InputManager.ins.MovementVector.multiply(3)); //updates chunks and moves player
+        Player.ins.move(InputManager.ins.MovementVector); //updates chunks and moves player   
         RenderManager.ins.Draw(); // draws everything
         let endTime = performance.now();
         const executionTime = endTime - startTime;

@@ -1,7 +1,7 @@
 /// <reference path="../Math/AABB.ts" />
 
 class Camera{
-    //Camera position in screen-position
+    //Camera position in screen-space-position
     public position: Vector2;
     //Camera AABB in grid-space
     public AABB: AABB ;
@@ -9,38 +9,40 @@ class Camera{
         //Camera position in screen-position
         this.position = pos;
         //Camera AABB in grid-space
-        this.AABB = 
-            new AABB(
-                new Vector2( (this.position.x - window.innerWidth/2) / Chunk.PixelSize,
+        this.AABB = new AABB(
+                new Vector2(
+                    (this.position.x - window.innerWidth/2) / Chunk.PixelSize,
                     (this.position.y - window.innerHeight/2) / Chunk.PixelSize),
-                new Vector2( window.innerWidth / Chunk.PixelSize,
-                    window.innerHeight / Chunk.PixelSize),
+                new Vector2( 
+                    (window.outerWidth) / Chunk.PixelSize,
+                    (window.outerHeight) / Chunk.PixelSize),
             );
     }
     UpdateCamera(){
-        this.position = Player.ins.position;
-        this.AABB = 
-            new AABB(
+        this.position = Player.ins.position.multiply(Chunk.PixelSize);
+        this.AABB = new AABB(
                 new Vector2(
                     (this.position.x - window.innerWidth/2) / Chunk.PixelSize,
-                    -(this.position.y - window.innerHeight/2) / Chunk.PixelSize),
+                    (this.position.y - window.innerHeight/2) / Chunk.PixelSize),
                 new Vector2( 
-                        (window.outerWidth) / Chunk.PixelSize,
-                        (window.outerHeight) / Chunk.PixelSize),
+                    (window.outerWidth) / Chunk.PixelSize,
+                    (window.outerHeight) / Chunk.PixelSize),
             );
         MapManager.ins.UpdateChunks();
     }
     GetCameraOffset(){
-        return this.position.flipX().add(new Vector2(Math.floor(window.innerWidth/2), -Math.floor(window.innerHeight/2)));
+        return this.position.flip().add(new Vector2(Math.floor(window.innerWidth/2), Math.floor(window.innerHeight/2)));
     }
 }
 
 class Player{
     public static ins: Player = new Player();
-    public position: Vector2 = new Vector2(2**16, -(2**16)); //2**16 default
-    public Speed: number = 3;
 
-    public camera: Camera = new Camera(this.position);
+    //player position in world position
+    public position: Vector2 = new Vector2(0, -(0)); //2**16 default
+    public Speed: number = 0.4;
+
+    public camera: Camera = new Camera(this.position.multiply(Chunk.PixelSize));
 
     constructor(){}
     move(dir: Vector2){
@@ -56,6 +58,6 @@ class Player{
     }
     Draw(CameraOffset: Vector2){
         RenderManager.ctx.fillStyle = 'red';
-        RenderManager.ctx.fillRect(this.position.x + CameraOffset.x, this.position.y - CameraOffset.y, Chunk.PixelSize, -Chunk.PixelSize);
+        RenderManager.ctx.fillRect(this.position.x * Chunk.PixelSize + CameraOffset.x, this.position.y * Chunk.PixelSize + CameraOffset.y, Chunk.PixelSize, Chunk.PixelSize);
     }
 }

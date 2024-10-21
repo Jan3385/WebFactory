@@ -26,7 +26,7 @@ class MapManager {
                 }
             }
         }
+        
         this.cPlanet.Chunks = this.cPlanet.Chunks.concat(newChunks);
-
     }
 }

@@ -36,11 +36,12 @@ class RenderManager{
 
         //render mouse indicator
         const IndicatorImg = new Image(Chunk.PixelSize, Chunk.PixelSize);
-        IndicatorImg.src = "Images/Indicators/MouseIndicator.png";
+        IndicatorImg.src = "images/indicators/MouseIndicator.png";
         RenderManager.ctx.drawImage(
             IndicatorImg, 
             InputManager.ins.mouseIndicatorPos.x * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().x, 
             InputManager.ins.mouseIndicatorPos.y * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().y,);
+
 
         this.PreviousCameraAABB = Player.ins.camera.AABB.copy();
         this.PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
