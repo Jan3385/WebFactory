@@ -383,6 +383,10 @@ class Planet {
 class MapManager {
     //current planet
     cPlanet;
+    //all entities - including buildings
+    entities = [];
+    //only buildings on map
+    buildings = [];
     static ins = new MapManager();
     constructor() {
         this.cPlanet = new Planet();
@@ -507,6 +511,8 @@ class RenderManager {
             RenderManager.ctx.drawImage(chunkRender, chunk.position.x * Chunk.ChunkSize * Chunk.PixelSize + cameraOffset.x, chunk.position.y * Chunk.ChunkSize * Chunk.PixelSize + cameraOffset.y);
             chunk.DrawChunkExtras(cameraOffset);
         });
+        //draw entities
+        MapManager.ins.entities.forEach(entity => entity.Draw(cameraOffset));
         Player.ins.Draw(Player.ins.camera.GetCameraOffset());
         //render mouse indicator
         const IndicatorImg = new Image(Chunk.PixelSize, Chunk.PixelSize);
@@ -691,13 +697,71 @@ class InputManager {
         InputManager.ins.mouseIndicatorPos = voxelPos;
     }
 }
+class Entity {
+    AABB;
+    position;
+    texture = null;
+    constructor(position, size) {
+        this.position = position;
+        this.AABB = new AABB(position.subtract(size.divideAndFloor(2)), size);
+        MapManager.ins.entities.push(this);
+    }
+    SetTexture(texture) {
+        this.texture = new Image(this.AABB.width * Chunk.PixelSize, this.AABB.height * Chunk.PixelSize);
+        this.texture.src = "Images/Entities/" + texture + ".png";
+    }
+    Draw(cameraOffset) {
+        if (this.texture == null) {
+            console.error("Entity texture is null");
+            return;
+        }
+        ;
+        RenderManager.ctx.drawImage(this.texture, this.position.x * Chunk.PixelSize + cameraOffset.x, this.position.y * Chunk.PixelSize + cameraOffset.y, this.AABB.width * Chunk.PixelSize, this.AABB.height * Chunk.PixelSize);
+    }
+    /*
+    * offsets by half a block
+    */
+    static GetAt(pos) {
+        return MapManager.ins.entities.filter(entity => entity.AABB.isDotInside(pos.x + .5, pos.y + .5));
+    }
+    static GetAtPrecise(pos) {
+        return MapManager.ins.entities.filter(entity => entity.AABB.isDotInside(pos.x, pos.y));
+    }
+    destroy() {
+        MapManager.ins.entities.splice(MapManager.ins.entities.indexOf(this), 1);
+    }
+}
+class Building extends Entity {
+    constructor(position, size) {
+        super(position, size);
+        MapManager.ins.buildings.push(this);
+    }
+    destroy() {
+        MapManager.ins.buildings.splice(MapManager.ins.buildings.indexOf(this), 1);
+        super.destroy();
+    }
+    /*
+    * offsets by half a block
+    */
+    static GetAt(pos) {
+        return MapManager.ins.buildings.filter(entity => entity.AABB.isDotInside(pos.x + .5, pos.y + .5));
+    }
+    static GetAtPrecise(pos) {
+        return MapManager.ins.buildings.filter(entity => entity.AABB.isDotInside(pos.x, pos.y));
+    }
+}
 /// <reference path="./Player/Player.ts" />
 /// <reference path="./Player/InputManager.ts" />
+/// <reference path="./Map/Entities/Enity.ts" />
 const fps = 50;
 async function Main() {
     // Start
     Player.ins.move(new Vector2(0, 0)); //updates chunks and moves player
     new RenderManager();
+    MapManager.ins.entities[0] = new Entity(new Vector2(1, 1), new Vector2(1, 1)); //nestretchuje se to :(
+    MapManager.ins.entities[0].SetTexture("SigmaMachine");
+    MapManager.ins.entities[1] = new Entity(new Vector2(3, 2), new Vector2(1, 1)); //nestretchuje se to :(
+    MapManager.ins.entities[1].SetTexture("SigmaMachine");
     let run = true;
     while (run) {
         // Update loop
@@ -707,9 +771,18 @@ async function Main() {
         RenderManager.ins.Draw(); // draws everything
         let endTime = performance.now();
         const executionTime = endTime - startTime;
+        //TODO: deltatime
         if (executionTime > 16)
             console.log("Lag spike! wait time designated for:", (1 / fps * 1000) - executionTime);
         await new Promise(r => setTimeout(r, Math.max((1 / fps * 1000) - executionTime, 0)));
     }
 }
 Main();
+class Smelter extends Building {
+    constructor(position, size) {
+        super(position, size);
+    }
+    Act(deltaTime) {
+        throw new Error("Method not implemented.");
+    }
+}

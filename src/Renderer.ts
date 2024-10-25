@@ -32,6 +32,9 @@ class RenderManager{
             chunk.DrawChunkExtras(cameraOffset);
         });
 
+        //draw entities
+        MapManager.ins.entities.forEach(entity => entity.Draw(cameraOffset));
+
         Player.ins.Draw(Player.ins.camera.GetCameraOffset());
 
         //render mouse indicator

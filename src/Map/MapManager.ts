@@ -4,6 +4,10 @@
 class MapManager {
     //current planet
     public cPlanet: Planet;
+    //all entities - including buildings
+    public entities: Entity[] = [];
+    //only buildings on map
+    public buildings: Building[] = [];
     public static ins: MapManager = new MapManager();
 
     private constructor() {
