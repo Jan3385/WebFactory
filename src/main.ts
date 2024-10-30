@@ -1,6 +1,7 @@
 /// <reference path="./Player/Player.ts" />
 /// <reference path="./Player/InputManager.ts" />
 /// <reference path="./Map/Entities/Enity.ts" />
+/// <reference path="./Map/Entities/Buildings/Smelter.ts" />
 
 const fps = 50;
 
@@ -9,10 +10,10 @@ async function Main() {
     Player.ins.move(new Vector2(0, 0)); //updates chunks and moves player
     new RenderManager();
 
-    MapManager.ins.entities[0] = new Entity(new Vector2(1, 1), new Vector2(1, 1)); //nestretchuje se to :(
-    MapManager.ins.entities[0].SetTexture("SigmaMachine");
-    MapManager.ins.entities[1] = new Entity(new Vector2(3, 2), new Vector2(1, 1)); //nestretchuje se to :(
-    MapManager.ins.entities[1].SetTexture("SigmaMachine");
+    const a = new Smelter(new Vector2(1, 1), new Vector2(1, 1)); //nestretchuje se to :(
+    a.SetTexture("SigmaMachine");
+    const b = new Smelter(new Vector2(3, 2), new Vector2(1, 1)); //nestretchuje se to :(
+    b.SetTexture("SigmaMachine");
 
     let run: boolean = true;
     while (run) {

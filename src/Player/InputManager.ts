@@ -144,11 +144,16 @@ class InputManager{
     onMouseDown(event: MouseEvent){
         const mousePos: Vector2 = new Vector2(event.clientX, event.clientY);
         const voxelPos: Vector2 = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
-
+        /*
         console.log(voxelPos);
 
         const color = MapManager.ins.cPlanet.GetDataAt(voxelPos.x, voxelPos.y)?.color;
         console.log('%c color', `background: ${color?.get()}; color: ${color?.get()}`);
+        */
+        MapManager.ins.buildings.forEach(building => {
+            if(building.AABB.isDotInside(voxelPos.x + .5, voxelPos.y + .5)){
+                building.OnClick();
+        }});
     }
     onMouseUp(event: MouseEvent){
         
@@ -162,7 +167,7 @@ class InputManager{
         //InputManager.ins.UpdateMouseIndicator(mousePos); //already done by player move
     }  
     onMouseWheel(event: WheelEvent){
-        
+        Chunk.PixelSize += event.deltaY/100;
     }
 
     UpdateMouseIndicator(mousePos: Vector2 = InputManager.ins.previouseMousePos){

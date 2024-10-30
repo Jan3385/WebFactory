@@ -77,11 +77,7 @@ class rgb{
     * @returns {string}
     */
     get(): string{
-        return 'rgb(' + this.r + ',' + this.g + ',' + this.b + ')';
-    }
-    getWithLight(light: number): string{
-        const lightShift = Math.min(light / 5, 1.1);
-        return `rgb(${Math.floor(this.r * lightShift)},${Math.floor(this.g*lightShift)},${this.b*lightShift})`;
+        return `rgb(${this.r},${this.g},${this.b})`;
     }
     /**
      * Makes the rgb value darker by the value
@@ -107,6 +103,62 @@ class rgb{
             Math.floor(lerp(this.r, other.r, t)),
             Math.floor(lerp(this.g, other.g, t)),
             Math.floor(lerp(this.b, other.b, t))
+        );
+    }
+}
+class rgba extends rgb{
+    a: number;
+    constructor(r: number, g: number, b: number, a: number){
+        super(r, g, b);
+        this.a = a;
+    }
+    new(): rgba{
+        return new rgba(this.r, this.g, this.b, this.a);
+    }
+    newSlightlyRandom(val: number): rgb{
+        return new rgba(this.r + Math.floor(Math.random()*val), 
+                        this.g + Math.floor(Math.random()*val), 
+                        this.b + Math.floor(Math.random()*val),
+                        this.a);
+    }
+    changeBy(val: number): rgb{
+        return new rgba(this.r + val, 
+                        this.g + val, 
+                        this.b + val,
+                        this.a);
+    }
+    /**
+    * Returns the rgb value in string format
+    * @returns {string}
+    */
+    get(): string{
+        return `rgba(${this.r},${this.g},${this.b},${this.a})`;
+    }
+    /**
+     * Makes the rgb value darker by the value
+     * @param {number} val 
+     *
+     */
+    Darker(): rgb{
+        return new rgb(
+            this.r / 2,
+            this.g / 2,
+            this.b / 2
+        )
+    }
+    Lerp(other: rgb, t: number): rgb{
+        return new rgb(
+            Math.floor(lerp(this.r, other.r, t)),
+            Math.floor(lerp(this.g, other.g, t)),
+            Math.floor(lerp(this.b, other.b, t))
+        );
+    }
+    MixWith(other: rgba, t: number): rgb{
+        return new rgba(
+            Math.floor(lerp(this.r, other.r, t)),
+            Math.floor(lerp(this.g, other.g, t)),
+            Math.floor(lerp(this.b, other.b, t)),
+            Math.floor(lerp(this.a, other.a, t))
         );
     }
 }

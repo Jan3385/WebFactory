@@ -26,6 +26,7 @@ class Entity{
             this.AABB.width*Chunk.PixelSize,
             this.AABB.height*Chunk.PixelSize);
     }
+    OnClick(): void{ };
     /*
     * offsets by half a block
     */
@@ -58,5 +59,6 @@ abstract class Building extends Entity{
         return MapManager.ins.buildings.filter(entity => entity.AABB.isDotInside(pos.x, pos.y));
     }
 
-    abstract Act(deltaTime: number): void;
+    public abstract Act(deltaTime: number): void;
+    public abstract OpenGUI(): GUI;
 }

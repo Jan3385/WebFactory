@@ -74,11 +74,7 @@ class rgb {
     * @returns {string}
     */
     get() {
-        return 'rgb(' + this.r + ',' + this.g + ',' + this.b + ')';
-    }
-    getWithLight(light) {
-        const lightShift = Math.min(light / 5, 1.1);
-        return `rgb(${Math.floor(this.r * lightShift)},${Math.floor(this.g * lightShift)},${this.b * lightShift})`;
+        return `rgb(${this.r},${this.g},${this.b})`;
     }
     /**
      * Makes the rgb value darker by the value
@@ -93,6 +89,43 @@ class rgb {
     }
     MixWith(other, t) {
         return new rgb(Math.floor(lerp(this.r, other.r, t)), Math.floor(lerp(this.g, other.g, t)), Math.floor(lerp(this.b, other.b, t)));
+    }
+}
+class rgba extends rgb {
+    a;
+    constructor(r, g, b, a) {
+        super(r, g, b);
+        this.a = a;
+    }
+    new() {
+        return new rgba(this.r, this.g, this.b, this.a);
+    }
+    newSlightlyRandom(val) {
+        return new rgba(this.r + Math.floor(Math.random() * val), this.g + Math.floor(Math.random() * val), this.b + Math.floor(Math.random() * val), this.a);
+    }
+    changeBy(val) {
+        return new rgba(this.r + val, this.g + val, this.b + val, this.a);
+    }
+    /**
+    * Returns the rgb value in string format
+    * @returns {string}
+    */
+    get() {
+        return `rgba(${this.r},${this.g},${this.b},${this.a})`;
+    }
+    /**
+     * Makes the rgb value darker by the value
+     * @param {number} val
+     *
+     */
+    Darker() {
+        return new rgb(this.r / 2, this.g / 2, this.b / 2);
+    }
+    Lerp(other, t) {
+        return new rgb(Math.floor(lerp(this.r, other.r, t)), Math.floor(lerp(this.g, other.g, t)), Math.floor(lerp(this.b, other.b, t)));
+    }
+    MixWith(other, t) {
+        return new rgba(Math.floor(lerp(this.r, other.r, t)), Math.floor(lerp(this.g, other.g, t)), Math.floor(lerp(this.b, other.b, t)), Math.floor(lerp(this.a, other.a, t)));
     }
 }
 /**
@@ -457,7 +490,9 @@ class Camera {
     }
     //moves the camera and updates visible chunks
     UpdateCamera() {
-        this.position = Player.ins.position.multiply(Chunk.PixelSize);
+        this.position = Player.ins.position
+            .multiply(Chunk.PixelSize) //world position to screen position
+            .add(new Vector2(Chunk.PixelSize / 2, Chunk.PixelSize / 2)); //keeps the player in the center of the screen
         this.AABB = new AABB(new Vector2((this.position.x - window.innerWidth / 2) / Chunk.PixelSize, (this.position.y - window.innerHeight / 2) / Chunk.PixelSize), new Vector2((window.outerWidth) / Chunk.PixelSize, (window.outerHeight) / Chunk.PixelSize));
         MapManager.ins.UpdateChunks();
     }
@@ -487,19 +522,167 @@ class Player {
         RenderManager.ctx.fillRect(this.position.x * Chunk.PixelSize + CameraOffset.x, this.position.y * Chunk.PixelSize + CameraOffset.y, Chunk.PixelSize, Chunk.PixelSize);
     }
 }
+class GUI {
+    elements;
+    AABB;
+    BackgroundImage;
+    constructor(width, height) {
+        this.elements = [];
+        this.AABB = new AABB(new Vector2(0, 0), new Vector2(width, height));
+        this.BackgroundImage = new Image();
+        this.SetBackground("Default");
+        this.MoveToMiddleOfScreen();
+        RenderManager.ins.AddGUI(this);
+    }
+    MoveToMiddleOfScreen() {
+        this.AABB.x = window.innerWidth / 2 - this.AABB.width / 2;
+        this.AABB.y = window.innerHeight / 2 - this.AABB.height / 2;
+    }
+    Draw(scale) {
+        //draw background
+        this.DrawBackground9Slice(scale, 16);
+        this.elements.forEach(guiElement => guiElement.Draw(scale, new Vector2(this.AABB.x, this.AABB.y)));
+    }
+    DrawBackgroundStretch(scale) {
+        RenderManager.ctx.drawImage(this.BackgroundImage, this.AABB.x * scale, this.AABB.y * scale, this.AABB.width * scale, this.AABB.height * scale);
+    }
+    DrawBackground9Slice(scale, border, pixelScale = 4) {
+        const x = this.AABB.x * scale;
+        const y = this.AABB.y * scale;
+        const width = this.AABB.width * scale / pixelScale;
+        const height = this.AABB.height * scale / pixelScale;
+        // Original dimensions of the image
+        const imgWidth = this.BackgroundImage.width;
+        const imgHeight = this.BackgroundImage.height;
+        // Coordinates for the corners and sides of the image in the source
+        const left = border;
+        const right = imgWidth - border;
+        const top = border;
+        const bottom = imgHeight - border;
+        // Scaled coordinates for the destination drawing area on the canvas
+        const destLeft = x;
+        const destRight = x + (width - border) * pixelScale;
+        const destTop = y;
+        const destBottom = y + (height - border) * pixelScale;
+        const scaledBorder = border * pixelScale;
+        RenderManager.ctx.drawImage(this.BackgroundImage, 0, 0, left, top, destLeft, destTop, scaledBorder, scaledBorder);
+        RenderManager.ctx.drawImage(this.BackgroundImage, right, 0, border, top, destRight, destTop, scaledBorder, scaledBorder);
+        RenderManager.ctx.drawImage(this.BackgroundImage, 0, bottom, left, border, destLeft, destBottom, scaledBorder, scaledBorder);
+        RenderManager.ctx.drawImage(this.BackgroundImage, right, bottom, border, border, destRight, destBottom, scaledBorder, scaledBorder);
+        RenderManager.ctx.drawImage(this.BackgroundImage, left, 0, right - left, top, destLeft + scaledBorder, destTop, (width - 2 * border) * pixelScale, scaledBorder);
+        RenderManager.ctx.drawImage(this.BackgroundImage, left, bottom, right - left, border, destLeft + scaledBorder, destBottom, (width - 2 * border) * pixelScale, scaledBorder);
+        RenderManager.ctx.drawImage(this.BackgroundImage, 0, top, left, bottom - top, destLeft, destTop + scaledBorder, scaledBorder, (height - 2 * border) * pixelScale);
+        RenderManager.ctx.drawImage(this.BackgroundImage, right, top, border, bottom - top, destRight, destTop + scaledBorder, scaledBorder, (height - 2 * border) * pixelScale);
+        //center
+        RenderManager.ctx.drawImage(this.BackgroundImage, left, top, right - left, bottom - top, destLeft + scaledBorder, destTop + scaledBorder, (width - 2 * border) * pixelScale, (height - 2 * border) * pixelScale);
+    }
+    AddElement(element) {
+        this.elements.push(element);
+    }
+    Close() {
+        RenderManager.ins.RemoveGUI(this);
+    }
+    SetBackground(backgroundName) {
+        this.BackgroundImage = new Image();
+        this.BackgroundImage.src = `Images/GUI/Backgrounds/${backgroundName}.png`;
+        return this;
+    }
+    AddText(AABB, text, textSize) {
+        this.elements.push(new GUIText(AABB, text, textSize));
+        return this;
+    }
+    AddImage(AABB, img) {
+        this.elements.push(new GUIImage(AABB, img));
+        return this;
+    }
+    AddButton(AABB, text, onClick) {
+        this.elements.push(new GUIButton(AABB, text, onClick));
+        return this;
+    }
+    AddTopBar() {
+        this.elements = this.elements.concat(this.GetTopBar());
+        return this;
+    }
+    GetTopBar() {
+        return [
+            new GUISimple(new AABB(new Vector2(0, -25), new Vector2(this.AABB.width, 25)), new rgba(255, 255, 255, 0.5)),
+            new GUIText(new AABB(new Vector2(0, 0), new Vector2(100, 50)), "TopBar", 20)
+        ];
+    }
+}
+class GUIElement {
+    AABB = new AABB(new Vector2(0, 0), new Vector2(1, 1));
+}
+class GUISimple extends GUIElement {
+    color;
+    constructor(AABB, color) {
+        super();
+        this.AABB = AABB;
+        this.color = color;
+    }
+    Draw(scale, offset) {
+        RenderManager.ctx.fillStyle = this.color.get();
+        RenderManager.ctx.fillRect(this.AABB.x * scale + offset.x, this.AABB.y * scale + offset.y, this.AABB.width * scale, this.AABB.height * scale);
+    }
+}
+class GUIText extends GUIElement {
+    text;
+    textSize;
+    constructor(AABB, text, textSize = 20) {
+        super();
+        this.AABB = AABB;
+        this.text = text;
+        this.textSize = textSize;
+    }
+    Draw(scale, offset) {
+        RenderManager.ctx.fillStyle = "white";
+        RenderManager.ctx.font = `${this.textSize}px Arial`;
+        RenderManager.ctx.fillText(this.text, this.AABB.x * scale + offset.x, this.AABB.y * scale + offset.y);
+    }
+}
+class GUIImage extends GUIElement {
+    img;
+    constructor(AABB, img) {
+        super();
+        this.AABB = AABB;
+        this.img = img;
+    }
+    Draw(scale, offset) {
+        RenderManager.ctx.drawImage(this.img, this.AABB.x * scale, this.AABB.y * scale, this.AABB.width * scale, this.AABB.height * scale);
+    }
+}
+class GUIButton extends GUIElement {
+    text;
+    onClick;
+    constructor(AABB, text, onClick) {
+        super();
+        this.AABB = AABB;
+        this.text = text;
+        this.onClick = onClick;
+    }
+    Draw(scale, offset) {
+    }
+    OnClick() {
+        this.onClick();
+    }
+}
 /// <reference path="./Math/Math.ts" />
 /// <reference path="./Map/MapManager.ts" />
 /// <reference path="./Player/Player.ts" />
+/// <reference path="./Player/GUI.ts" />
 class RenderManager {
     static canvas;
     static ctx;
     static ins;
+    ActiveGUIs = [];
     constructor() {
         RenderManager.canvas = document.getElementById('GameCanvas');
         RenderManager.ctx = RenderManager.canvas.getContext('2d', { alpha: false });
         RenderManager.ins = this;
         window.addEventListener('resize', this.OnWindowResize);
         this.OnWindowResize();
+        //TODO: temp
+        //const gui = new GUI(200, 200);
     }
     PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
     PreviousCameraAABB = Player.ins.camera.AABB.copy();
@@ -518,6 +701,8 @@ class RenderManager {
         const IndicatorImg = new Image(Chunk.PixelSize, Chunk.PixelSize);
         IndicatorImg.src = "images/indicators/MouseIndicator.png";
         RenderManager.ctx.drawImage(IndicatorImg, InputManager.ins.mouseIndicatorPos.x * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().x, InputManager.ins.mouseIndicatorPos.y * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().y);
+        //render GUI
+        this.ActiveGUIs.forEach(gui => gui.Draw(1)); //TODO: scale
         this.PreviousCameraAABB = Player.ins.camera.AABB.copy();
         this.PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
     }
@@ -525,6 +710,18 @@ class RenderManager {
         RenderManager.canvas.width = window.innerWidth;
         RenderManager.canvas.height = window.innerHeight;
         RenderManager.ins.Draw();
+        RenderManager.ctx.imageSmoothingEnabled = false;
+    }
+    AddGUI(gui) {
+        this.ActiveGUIs.push(gui);
+    }
+    RemoveGUI(gui) {
+        const index = this.ActiveGUIs.indexOf(gui);
+        if (index > -1)
+            this.ActiveGUIs.splice(index, 1);
+    }
+    CloseAllGUIs() {
+        this.ActiveGUIs.forEach(gui => gui.Close());
     }
 }
 let ExecTimeStarts = [];
@@ -677,9 +874,17 @@ class InputManager {
     onMouseDown(event) {
         const mousePos = new Vector2(event.clientX, event.clientY);
         const voxelPos = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
+        /*
         console.log(voxelPos);
+
         const color = MapManager.ins.cPlanet.GetDataAt(voxelPos.x, voxelPos.y)?.color;
         console.log('%c color', `background: ${color?.get()}; color: ${color?.get()}`);
+        */
+        MapManager.ins.buildings.forEach(building => {
+            if (building.AABB.isDotInside(voxelPos.x + .5, voxelPos.y + .5)) {
+                building.OnClick();
+            }
+        });
     }
     onMouseUp(event) {
     }
@@ -691,6 +896,7 @@ class InputManager {
         //InputManager.ins.UpdateMouseIndicator(mousePos); //already done by player move
     }
     onMouseWheel(event) {
+        Chunk.PixelSize += event.deltaY / 100;
     }
     UpdateMouseIndicator(mousePos = InputManager.ins.previouseMousePos) {
         const voxelPos = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
@@ -718,6 +924,8 @@ class Entity {
         ;
         RenderManager.ctx.drawImage(this.texture, this.position.x * Chunk.PixelSize + cameraOffset.x, this.position.y * Chunk.PixelSize + cameraOffset.y, this.AABB.width * Chunk.PixelSize, this.AABB.height * Chunk.PixelSize);
     }
+    OnClick() { }
+    ;
     /*
     * offsets by half a block
     */
@@ -750,18 +958,36 @@ class Building extends Entity {
         return MapManager.ins.buildings.filter(entity => entity.AABB.isDotInside(pos.x, pos.y));
     }
 }
+class Smelter extends Building {
+    constructor(position, size) {
+        super(position, size);
+    }
+    Act(deltaTime) {
+        throw new Error("Method not implemented.");
+    }
+    OnClick() {
+        this.OpenGUI();
+    }
+    OpenGUI() {
+        const gui = new GUI(800, 400)
+            .AddTopBar()
+            .AddText(new AABB(new Vector2(0, 10), new Vector2(200, 10)), "Smelter", 20);
+        return gui;
+    }
+}
 /// <reference path="./Player/Player.ts" />
 /// <reference path="./Player/InputManager.ts" />
 /// <reference path="./Map/Entities/Enity.ts" />
+/// <reference path="./Map/Entities/Buildings/Smelter.ts" />
 const fps = 50;
 async function Main() {
     // Start
     Player.ins.move(new Vector2(0, 0)); //updates chunks and moves player
     new RenderManager();
-    MapManager.ins.entities[0] = new Entity(new Vector2(1, 1), new Vector2(1, 1)); //nestretchuje se to :(
-    MapManager.ins.entities[0].SetTexture("SigmaMachine");
-    MapManager.ins.entities[1] = new Entity(new Vector2(3, 2), new Vector2(1, 1)); //nestretchuje se to :(
-    MapManager.ins.entities[1].SetTexture("SigmaMachine");
+    const a = new Smelter(new Vector2(1, 1), new Vector2(1, 1)); //nestretchuje se to :(
+    a.SetTexture("SigmaMachine");
+    const b = new Smelter(new Vector2(3, 2), new Vector2(1, 1)); //nestretchuje se to :(
+    b.SetTexture("SigmaMachine");
     let run = true;
     while (run) {
         // Update loop
@@ -778,11 +1004,3 @@ async function Main() {
     }
 }
 Main();
-class Smelter extends Building {
-    constructor(position, size) {
-        super(position, size);
-    }
-    Act(deltaTime) {
-        throw new Error("Method not implemented.");
-    }
-}

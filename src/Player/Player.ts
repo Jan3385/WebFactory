@@ -20,7 +20,10 @@ class Camera{
     }
     //moves the camera and updates visible chunks
     UpdateCamera(){
-        this.position = Player.ins.position.multiply(Chunk.PixelSize);
+        this.position = Player.ins.position
+            .multiply(Chunk.PixelSize) //world position to screen position
+            .add(new Vector2(Chunk.PixelSize/2, Chunk.PixelSize/2)); //keeps the player in the center of the screen
+
         this.AABB = new AABB(
                 new Vector2(
                     (this.position.x - window.innerWidth/2) / Chunk.PixelSize,
@@ -33,7 +36,11 @@ class Camera{
         MapManager.ins.UpdateChunks();
     }
     GetCameraOffset(){
-        return this.position.flip().add(new Vector2(Math.floor(window.innerWidth/2), Math.floor(window.innerHeight/2)));
+        return this.position.flip().add(
+            new Vector2(
+                Math.floor(window.innerWidth/2), 
+                Math.floor(window.innerHeight/2)
+            ));
     }
 }
 
