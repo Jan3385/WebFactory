@@ -606,7 +606,7 @@ class GUI {
     GetTopBar() {
         return [
             new GUISimple(new AABB(new Vector2(0, -25), new Vector2(this.AABB.width, 25)), new rgba(255, 255, 255, 0.5)),
-            new GUIText(new AABB(new Vector2(0, 0), new Vector2(100, 50)), "TopBar", 20)
+            new GUIText(new AABB(new Vector2(0, -5), new Vector2(100, 20)), "TopBar", 20)
         ];
     }
 }
@@ -973,7 +973,7 @@ class Smelter extends Building {
     OpenGUI() {
         const gui = new GUI(800, 400)
             .AddTopBar()
-            .AddText(new AABB(new Vector2(0, 10), new Vector2(200, 10)), "Smelter", 20);
+            .AddText(new AABB(new Vector2(0, 20), new Vector2(200, 10)), "Smelter", 20);
         return gui;
     }
 }

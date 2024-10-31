@@ -93,7 +93,7 @@ class GUI{
     private GetTopBar(): GUIElement[]{
         return [
             new GUISimple(new AABB(new Vector2(0, -25), new Vector2(this.AABB.width, 25)), new rgba(255, 255, 255, 0.5)),
-            new GUIText(new AABB(new Vector2(0, 0), new Vector2(100, 50)), "TopBar", 20)
+            new GUIText(new AABB(new Vector2(0, -5), new Vector2(100, 20)), "TopBar", 20)
         ];
     }
 }
