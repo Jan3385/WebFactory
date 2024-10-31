@@ -114,7 +114,7 @@ class PerlinNoise {
     }
     GetGroundDataAt(x: number, y: number): GroundData{
         const color = this.GeneratePerlinAt(x/32, y/32);
-        return new GroundData(new Vector2(x%Chunk.ChunkSize, y%Chunk.ChunkSize), new rgb(color.r, color.g, color.b));
+        return new GroundData(new rgb(color.r, color.g, color.b));
     }
 }
 class ValueNoise{ //looks better for terrain
@@ -219,6 +219,6 @@ class ValueNoise{ //looks better for terrain
     // Generate ground data at (x, y)
     GetGroundDataAt(x: number, y: number): GroundData {
         const color = this.GenerateFractalAt(x, y);
-        return new GroundData(new Vector2(x % Chunk.ChunkSize, y % Chunk.ChunkSize), new rgb(color.r, color.g, color.b));
+        return new GroundData(new rgb(color.r, color.g, color.b));
     }
 }

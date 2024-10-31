@@ -34,98 +34,91 @@ class Vector2 {
     subtract(other) {
         return new Vector2(this.x - other.x, this.y - other.y);
     }
-    static SidesDir() {
-        return [new Vector2(0, 1), new Vector2(-1, 0), new Vector2(1, 0), new Vector2(0, -1)];
-    }
-    static AroundDir() {
-        return [new Vector2(0, 1), new Vector2(-1, 0), new Vector2(1, 0), new Vector2(0, -1),
-            new Vector2(1, 1), new Vector2(-1, 1), new Vector2(1, -1), new Vector2(-1, -1)];
-    }
+    static SidesDir = [
+        new Vector2(0, 1), new Vector2(-1, 0), new Vector2(1, 0), new Vector2(0, -1)
+    ];
+    static AroundDir = [
+        new Vector2(0, 1), new Vector2(-1, 0), new Vector2(1, 0), new Vector2(0, -1),
+        new Vector2(1, 1), new Vector2(-1, 1), new Vector2(1, -1), new Vector2(-1, -1)
+    ];
     copy() {
         return new Vector2(this.x, this.y);
     }
 }
 class rgb {
-    /**
-     * @constructor
-     * @param {number} r
-     * @param {number} g
-     * @param {number} b
-     */
-    r;
-    g;
-    b;
+    color;
     constructor(r, g, b) {
-        this.r = r;
-        this.g = g;
-        this.b = b;
+        this.color = rgb.pack(r, g, b);
+    }
+    static pack(r, g, b) {
+        return (r << 16) | (g << 8) | b;
+    }
+    static unpack(color) {
+        return {
+            r: (color >> 16) & 0xff,
+            g: (color >> 8) & 0xff,
+            b: color & 0xff,
+        };
     }
     new() {
-        return new rgb(this.r, this.g, this.b);
+        const { r, g, b } = rgb.unpack(this.color);
+        return new rgb(r, g, b);
     }
     newSlightlyRandom(val) {
-        return new rgb(this.r + Math.floor(Math.random() * val), this.g + Math.floor(Math.random() * val), this.b + Math.floor(Math.random() * val));
+        const { r, g, b } = rgb.unpack(this.color);
+        return new rgb(clamp(r + Math.floor(Math.random() * val)), clamp(g + Math.floor(Math.random() * val)), clamp(b + Math.floor(Math.random() * val)));
     }
     changeBy(val) {
-        return new rgb(this.r + val, this.g + val, this.b + val);
+        const { r, g, b } = rgb.unpack(this.color);
+        return new rgb(clamp(r + val), clamp(g + val), clamp(b + val));
     }
-    /**
-    * Returns the rgb value in string format
-    * @returns {string}
-    */
     get() {
-        return `rgb(${this.r},${this.g},${this.b})`;
+        const { r, g, b } = rgb.unpack(this.color);
+        return `rgb(${r},${g},${b})`;
     }
-    /**
-     * Makes the rgb value darker by the value
-     * @param {number} val
-     *
-     */
-    Darker() {
-        return new rgb(this.r / 2, this.g / 2, this.b / 2);
+    darker() {
+        const { r, g, b } = rgb.unpack(this.color);
+        return new rgb(r / 2, g / 2, b / 2);
     }
-    Lerp(other, t) {
-        return new rgb(Math.floor(lerp(this.r, other.r, t)), Math.floor(lerp(this.g, other.g, t)), Math.floor(lerp(this.b, other.b, t)));
+    lerp(other, t) {
+        const { r, g, b } = rgb.unpack(this.color);
+        const { r: or, g: og, b: ob } = rgb.unpack(other.color);
+        return new rgb(Math.floor(lerp(r, or, t)), Math.floor(lerp(g, og, t)), Math.floor(lerp(b, ob, t)));
     }
     MixWith(other, t) {
-        return new rgb(Math.floor(lerp(this.r, other.r, t)), Math.floor(lerp(this.g, other.g, t)), Math.floor(lerp(this.b, other.b, t)));
+        return this.lerp(other, t);
     }
 }
 class rgba extends rgb {
-    a;
+    alpha;
     constructor(r, g, b, a) {
         super(r, g, b);
-        this.a = a;
+        this.alpha = clamp(a);
     }
     new() {
-        return new rgba(this.r, this.g, this.b, this.a);
+        const { r, g, b } = rgb.unpack(this.color);
+        return new rgba(r, g, b, this.alpha);
     }
     newSlightlyRandom(val) {
-        return new rgba(this.r + Math.floor(Math.random() * val), this.g + Math.floor(Math.random() * val), this.b + Math.floor(Math.random() * val), this.a);
+        const { r, g, b } = rgb.unpack(this.color);
+        return new rgba(clamp(r + Math.floor(Math.random() * val)), clamp(g + Math.floor(Math.random() * val)), clamp(b + Math.floor(Math.random() * val)), this.alpha);
     }
     changeBy(val) {
-        return new rgba(this.r + val, this.g + val, this.b + val, this.a);
+        const { r, g, b } = rgb.unpack(this.color);
+        return new rgba(clamp(r + val), clamp(g + val), clamp(b + val), this.alpha);
     }
-    /**
-    * Returns the rgb value in string format
-    * @returns {string}
-    */
     get() {
-        return `rgba(${this.r},${this.g},${this.b},${this.a})`;
+        const { r, g, b } = rgb.unpack(this.color);
+        return `rgba(${r},${g},${b},${this.alpha / 255})`;
     }
-    /**
-     * Makes the rgb value darker by the value
-     * @param {number} val
-     *
-     */
     Darker() {
-        return new rgb(this.r / 2, this.g / 2, this.b / 2);
-    }
-    Lerp(other, t) {
-        return new rgb(Math.floor(lerp(this.r, other.r, t)), Math.floor(lerp(this.g, other.g, t)), Math.floor(lerp(this.b, other.b, t)));
+        const { r, g, b } = rgb.unpack(this.color);
+        return new rgba(r / 2, g / 2, b / 2, this.alpha);
     }
     MixWith(other, t) {
-        return new rgba(Math.floor(lerp(this.r, other.r, t)), Math.floor(lerp(this.g, other.g, t)), Math.floor(lerp(this.b, other.b, t)), Math.floor(lerp(this.a, other.a, t)));
+        const { r, g, b } = rgb.unpack(this.color);
+        const { r: or, g: og, b: ob } = rgb.unpack(other.color);
+        return new rgba(Math.floor(lerp(r, or, t)), Math.floor(lerp(g, og, t)), Math.floor(lerp(b, ob, t)), Math.floor(lerp(this.alpha, other.alpha, t)));
     }
 }
 /**
@@ -133,6 +126,9 @@ class rgba extends rgb {
  */
 function lerp(a, b, t) {
     return a + t * (b - a);
+}
+function clamp(val, min = 0, max = 255) {
+    return Math.min(Math.max(val, min), max);
 }
 /// <reference path="../../Math/Math.ts" />
 const seed = Math.random() * 1000;
@@ -234,7 +230,7 @@ class PerlinNoise {
     }
     GetGroundDataAt(x, y) {
         const color = this.GeneratePerlinAt(x / 32, y / 32);
-        return new GroundData(new Vector2(x % Chunk.ChunkSize, y % Chunk.ChunkSize), new rgb(color.r, color.g, color.b));
+        return new GroundData(new rgb(color.r, color.g, color.b));
     }
 }
 class ValueNoise {
@@ -326,7 +322,7 @@ class ValueNoise {
     // Generate ground data at (x, y)
     GetGroundDataAt(x, y) {
         const color = this.GenerateFractalAt(x, y);
-        return new GroundData(new Vector2(x % Chunk.ChunkSize, y % Chunk.ChunkSize), new rgb(color.r, color.g, color.b));
+        return new GroundData(new rgb(color.r, color.g, color.b));
     }
 }
 /// <reference path="../Math/Math.ts" />
@@ -344,23 +340,32 @@ class Chunk {
     chunkRenderCtx;
     constructor(position) {
         this.position = position;
-        this.chunkRender = new OffscreenCanvas(Chunk.ChunkSize * Chunk.PixelSize, Chunk.ChunkSize * Chunk.PixelSize);
+        this.chunkRender = new OffscreenCanvas(Chunk.ChunkSize, Chunk.ChunkSize);
         this.chunkRenderCtx = this.chunkRender.getContext('2d', { alpha: false });
+        const defaultGroundData = new GroundData(new rgb(0, 0, 0));
+        for (let y = 0; y < Chunk.ChunkSize; y++) {
+            this.data[y] = [];
+            for (let x = 0; x < Chunk.ChunkSize; x++) {
+                this.data[y][x] = defaultGroundData;
+            }
+        }
         this.Load();
     }
     Load() {
         for (let y = 0; y < Chunk.ChunkSize; y++) {
             for (let x = 0; x < Chunk.ChunkSize; x++) {
-                this.data.push(ValueNoise.valueNoise.GetGroundDataAt(x + this.position.x * Chunk.ChunkSize, y + this.position.y * Chunk.ChunkSize));
+                this.data[y][x] = ValueNoise.valueNoise.GetGroundDataAt(x + this.position.x * Chunk.ChunkSize, y + this.position.y * Chunk.ChunkSize);
             }
         }
         this.PreDrawChunk();
     }
     PreDrawChunk() {
-        this.data.forEach(data => {
-            this.chunkRenderCtx.fillStyle = data.color.get();
-            this.chunkRenderCtx.fillRect(Math.floor(data.position.x * Chunk.PixelSize), Math.floor(data.position.y * Chunk.PixelSize), Chunk.PixelSize, Chunk.PixelSize);
-        });
+        for (let y = 0; y < Chunk.ChunkSize; y++) {
+            for (let x = 0; x < Chunk.ChunkSize; x++) {
+                this.chunkRenderCtx.fillStyle = this.data[y][x].color.get();
+                this.chunkRenderCtx.fillRect(x, y, 1, 1);
+            }
+        }
     }
     GetChunkRender() {
         return this.chunkRender;
@@ -387,14 +392,9 @@ class Chunk {
     }
 }
 class GroundData {
-    position;
     color;
-    constructor(position, color) {
-        this.position = position;
+    constructor(color) {
         this.color = color;
-    }
-    GetAABB() {
-        return new AABB(this.position, new Vector2(1, 1));
     }
 }
 /// <reference path="./GroundData.ts" />
@@ -406,7 +406,7 @@ class Planet {
         const chunkPos = new Vector2(Math.floor(x / Chunk.ChunkSize), Math.floor(y / Chunk.ChunkSize));
         const chunk = this.Chunks.find(chunk => chunk.position.x == chunkPos.x && chunk.position.y == chunkPos.y);
         if (chunk) {
-            return chunk.data.find((data) => data.position.x === x % Chunk.ChunkSize && data.position.y === y % Chunk.ChunkSize);
+            return chunk.data[y % Chunk.ChunkSize][x % Chunk.ChunkSize];
         }
         return null;
     }
@@ -689,9 +689,10 @@ class RenderManager {
     Draw() {
         const FrameOffset = Player.ins.camera.GetCameraOffset().subtract(this.PreviousCameraOffset);
         const cameraOffset = Player.ins.camera.GetCameraOffset();
+        //draw chunks
         MapManager.ins.cPlanet.Chunks.forEach(chunk => {
             const chunkRender = chunk.GetChunkRender();
-            RenderManager.ctx.drawImage(chunkRender, chunk.position.x * Chunk.ChunkSize * Chunk.PixelSize + cameraOffset.x, chunk.position.y * Chunk.ChunkSize * Chunk.PixelSize + cameraOffset.y);
+            RenderManager.ctx.drawImage(chunkRender, chunk.position.x * Chunk.ChunkSize * Chunk.PixelSize + cameraOffset.x, chunk.position.y * Chunk.ChunkSize * Chunk.PixelSize + cameraOffset.y, Chunk.ChunkSize * Chunk.PixelSize, Chunk.ChunkSize * Chunk.PixelSize);
             chunk.DrawChunkExtras(cameraOffset);
         });
         //draw entities
@@ -700,7 +701,7 @@ class RenderManager {
         //render mouse indicator
         const IndicatorImg = new Image(Chunk.PixelSize, Chunk.PixelSize);
         IndicatorImg.src = "images/indicators/MouseIndicator.png";
-        RenderManager.ctx.drawImage(IndicatorImg, InputManager.ins.mouseIndicatorPos.x * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().x, InputManager.ins.mouseIndicatorPos.y * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().y);
+        RenderManager.ctx.drawImage(IndicatorImg, InputManager.ins.mouseIndicatorPos.x * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().x, InputManager.ins.mouseIndicatorPos.y * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().y, Chunk.PixelSize, Chunk.PixelSize);
         //render GUI
         this.ActiveGUIs.forEach(gui => gui.Draw(1)); //TODO: scale
         this.PreviousCameraAABB = Player.ins.camera.AABB.copy();
@@ -896,7 +897,8 @@ class InputManager {
         //InputManager.ins.UpdateMouseIndicator(mousePos); //already done by player move
     }
     onMouseWheel(event) {
-        Chunk.PixelSize += event.deltaY / 100;
+        const WheelDir = event.deltaY > 0 ? -1 : 1;
+        Chunk.PixelSize = clamp(Chunk.PixelSize + WheelDir, 6, 30);
     }
     UpdateMouseIndicator(mousePos = InputManager.ins.previouseMousePos) {
         const voxelPos = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);

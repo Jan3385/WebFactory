@@ -29,12 +29,15 @@ class RenderManager{
         const FrameOffset = Player.ins.camera.GetCameraOffset().subtract(this.PreviousCameraOffset);
 
         const cameraOffset = Player.ins.camera.GetCameraOffset();
+
+        //draw chunks
         MapManager.ins.cPlanet.Chunks.forEach(chunk => {
             const chunkRender = chunk.GetChunkRender();
             RenderManager.ctx.drawImage(
                 chunkRender, 
                 chunk.position.x*Chunk.ChunkSize*Chunk.PixelSize + cameraOffset.x, 
-                chunk.position.y*Chunk.ChunkSize*Chunk.PixelSize + cameraOffset.y);
+                chunk.position.y*Chunk.ChunkSize*Chunk.PixelSize + cameraOffset.y,
+                Chunk.ChunkSize*Chunk.PixelSize, Chunk.ChunkSize*Chunk.PixelSize);
             chunk.DrawChunkExtras(cameraOffset);
         });
 
@@ -49,7 +52,8 @@ class RenderManager{
         RenderManager.ctx.drawImage(
             IndicatorImg, 
             InputManager.ins.mouseIndicatorPos.x * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().x, 
-            InputManager.ins.mouseIndicatorPos.y * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().y,);
+            InputManager.ins.mouseIndicatorPos.y * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().y,
+            Chunk.PixelSize, Chunk.PixelSize);
 
         //render GUI
         this.ActiveGUIs.forEach(gui => gui.Draw(1)); //TODO: scale

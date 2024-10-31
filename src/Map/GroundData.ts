@@ -10,30 +10,38 @@ class Chunk{
 
     //left top position in the grid-space
     position: Vector2;
-    data: GroundData[] = [];
+    data: GroundData[][] = [];
     private chunkRender: OffscreenCanvas;
     private chunkRenderCtx: OffscreenCanvasRenderingContext2D;
     constructor(position: Vector2) {
         this.position = position;
-        this.chunkRender = new OffscreenCanvas(Chunk.ChunkSize*Chunk.PixelSize, Chunk.ChunkSize*Chunk.PixelSize);
+        this.chunkRender = new OffscreenCanvas(Chunk.ChunkSize, Chunk.ChunkSize);
         this.chunkRenderCtx = this.chunkRender.getContext('2d', {alpha: false})!
+
+        const defaultGroundData = new GroundData(new rgb(0, 0, 0));
+        for(let y = 0; y < Chunk.ChunkSize; y++){
+            this.data[y] = [];
+            for(let x = 0; x < Chunk.ChunkSize; x++){
+                this.data[y][x] = defaultGroundData;
+            }
+        }
         this.Load();
     }
     Load(){
         for(let y = 0; y < Chunk.ChunkSize; y++){
             for(let x = 0; x < Chunk.ChunkSize; x++){
-                this.data.push(ValueNoise.valueNoise.GetGroundDataAt(x + this.position.x * Chunk.ChunkSize, y + this.position.y * Chunk.ChunkSize));
+                this.data[y][x] = ValueNoise.valueNoise.GetGroundDataAt(x + this.position.x * Chunk.ChunkSize, y + this.position.y * Chunk.ChunkSize);
             }
         }
         this.PreDrawChunk();
     }
     PreDrawChunk(){
-        this.data.forEach(data => {
-            this.chunkRenderCtx.fillStyle = data.color.get();
-            this.chunkRenderCtx.fillRect(
-                Math.floor(data.position.x * Chunk.PixelSize), 
-                Math.floor(data.position.y * Chunk.PixelSize), Chunk.PixelSize, Chunk.PixelSize);
-        });
+        for(let y = 0; y < Chunk.ChunkSize; y++){
+            for(let x = 0; x < Chunk.ChunkSize; x++){
+                this.chunkRenderCtx.fillStyle = this.data[y][x].color.get();
+                this.chunkRenderCtx.fillRect(x, y, 1, 1);
+            }
+        }
     }
     GetChunkRender(): OffscreenCanvas{
         return this.chunkRender;
@@ -65,14 +73,9 @@ class Chunk{
     }
 }
 class GroundData {
-    position: Vector2;
     color: rgb;
 
-    constructor(position: Vector2, color: rgb) {
-        this.position = position;
+    constructor(color: rgb) {
         this.color = color;
-    }
-    GetAABB(){
-        return new AABB(this.position, new Vector2(1, 1));
     }
 }

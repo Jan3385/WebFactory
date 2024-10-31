@@ -167,7 +167,8 @@ class InputManager{
         //InputManager.ins.UpdateMouseIndicator(mousePos); //already done by player move
     }  
     onMouseWheel(event: WheelEvent){
-        Chunk.PixelSize += event.deltaY/100;
+        const WheelDir = event.deltaY > 0 ? -1 : 1;
+        Chunk.PixelSize = clamp(Chunk.PixelSize + WheelDir, 6, 30);
     }
 
     UpdateMouseIndicator(mousePos: Vector2 = InputManager.ins.previouseMousePos){

@@ -33,132 +33,126 @@ class Vector2{
     subtract(other: Vector2): Vector2{
         return new Vector2(this.x - other.x, this.y - other.y);
     }
-    static SidesDir(): Vector2[] {
-        return [new Vector2(0, 1), new Vector2(-1, 0), new Vector2(1, 0), new Vector2(0, -1)];
-    }
-    static AroundDir(): Vector2[]{
-        return [ new Vector2(0, 1), new Vector2(-1, 0), new Vector2(1, 0), new Vector2(0, -1),
-            new Vector2(1, 1), new Vector2(-1, 1), new Vector2(1, -1), new Vector2(-1, -1) ];
-    }
+    static readonly SidesDir: Vector2[] = [
+        new Vector2(0, 1), new Vector2(-1, 0), new Vector2(1, 0), new Vector2(0, -1)
+    ];
+
+    static readonly AroundDir: Vector2[] = [
+        new Vector2(0, 1), new Vector2(-1, 0), new Vector2(1, 0), new Vector2(0, -1),
+        new Vector2(1, 1), new Vector2(-1, 1), new Vector2(1, -1), new Vector2(-1, -1)
+    ];
     copy(): Vector2{
         return new Vector2(this.x, this.y);
     }
 }
 class rgb{
-    /**
-     * @constructor
-     * @param {number} r 
-     * @param {number} g 
-     * @param {number} b 
-     */
-    r: number;
-    g: number;
-    b: number;
+    protected color: number;
     constructor(r: number,g: number,b: number){
-        this.r = r;
-        this.g = g;
-        this.b = b;
+        this.color = rgb.pack(r, g, b);
     }
-    new(): rgb{
-        return new rgb(this.r, this.g, this.b);
+    static pack(r: number, g: number, b: number): number{
+        return (r << 16) | (g << 8) | b;
     }
-    newSlightlyRandom(val: number): rgb{
-        return new rgb(this.r + Math.floor(Math.random()*val), 
-                        this.g + Math.floor(Math.random()*val), 
-                        this.b + Math.floor(Math.random()*val));
+    static unpack(color: number): { r: number; g: number; b: number } {
+        return {
+            r: (color >> 16) & 0xff,
+            g: (color >> 8) & 0xff,
+            b: color & 0xff,
+        };
     }
-    changeBy(val: number): rgb{
-        return new rgb(this.r + val, 
-                        this.g + val, 
-                        this.b + val);
+    new(): rgb {
+        const { r, g, b } = rgb.unpack(this.color);
+        return new rgb(r, g, b);
     }
-    /**
-    * Returns the rgb value in string format
-    * @returns {string}
-    */
-    get(): string{
-        return `rgb(${this.r},${this.g},${this.b})`;
-    }
-    /**
-     * Makes the rgb value darker by the value
-     * @param {number} val 
-     *
-     */
-    Darker(): rgb{
+
+    newSlightlyRandom(val: number): rgb {
+        const { r, g, b } = rgb.unpack(this.color);
         return new rgb(
-            this.r / 2,
-            this.g / 2,
-            this.b / 2
-        )
-    }
-    Lerp(other: rgb, t: number): rgb{
-        return new rgb(
-            Math.floor(lerp(this.r, other.r, t)),
-            Math.floor(lerp(this.g, other.g, t)),
-            Math.floor(lerp(this.b, other.b, t))
+            clamp(r + Math.floor(Math.random() * val)),
+            clamp(g + Math.floor(Math.random() * val)),
+            clamp(b + Math.floor(Math.random() * val))
         );
     }
-    MixWith(other: rgb, t: number): rgb{
+    changeBy(val: number): rgb {
+        const { r, g, b } = rgb.unpack(this.color);
         return new rgb(
-            Math.floor(lerp(this.r, other.r, t)),
-            Math.floor(lerp(this.g, other.g, t)),
-            Math.floor(lerp(this.b, other.b, t))
+            clamp(r + val),
+            clamp(g + val),
+            clamp(b + val)
         );
+    }
+    get(): string {
+        const { r, g, b } = rgb.unpack(this.color);
+        return `rgb(${r},${g},${b})`;
+    }
+    darker(): rgb {
+        const { r, g, b } = rgb.unpack(this.color);
+        return new rgb(r / 2, g / 2, b / 2);
+    }
+    lerp(other: rgb, t: number): rgb {
+        const { r, g, b } = rgb.unpack(this.color);
+        const { r: or, g: og, b: ob } = rgb.unpack(other.color);
+        return new rgb(
+            Math.floor(lerp(r, or, t)),
+            Math.floor(lerp(g, og, t)),
+            Math.floor(lerp(b, ob, t))
+        );
+    }
+    MixWith(other: rgb, t: number): rgb {
+        return this.lerp(other, t);
     }
 }
 class rgba extends rgb{
-    a: number;
-    constructor(r: number, g: number, b: number, a: number){
+    private alpha: number;
+
+    constructor(r: number, g: number, b: number, a: number) {
         super(r, g, b);
-        this.a = a;
+        this.alpha = clamp(a);
     }
-    new(): rgba{
-        return new rgba(this.r, this.g, this.b, this.a);
+
+    new(): rgba {
+        const { r, g, b } = rgb.unpack(this.color);
+        return new rgba(r, g, b, this.alpha);
     }
-    newSlightlyRandom(val: number): rgb{
-        return new rgba(this.r + Math.floor(Math.random()*val), 
-                        this.g + Math.floor(Math.random()*val), 
-                        this.b + Math.floor(Math.random()*val),
-                        this.a);
-    }
-    changeBy(val: number): rgb{
-        return new rgba(this.r + val, 
-                        this.g + val, 
-                        this.b + val,
-                        this.a);
-    }
-    /**
-    * Returns the rgb value in string format
-    * @returns {string}
-    */
-    get(): string{
-        return `rgba(${this.r},${this.g},${this.b},${this.a})`;
-    }
-    /**
-     * Makes the rgb value darker by the value
-     * @param {number} val 
-     *
-     */
-    Darker(): rgb{
-        return new rgb(
-            this.r / 2,
-            this.g / 2,
-            this.b / 2
-        )
-    }
-    Lerp(other: rgb, t: number): rgb{
-        return new rgb(
-            Math.floor(lerp(this.r, other.r, t)),
-            Math.floor(lerp(this.g, other.g, t)),
-            Math.floor(lerp(this.b, other.b, t))
+
+    newSlightlyRandom(val: number): rgba {
+        const { r, g, b } = rgb.unpack(this.color);
+        return new rgba(
+            clamp(r + Math.floor(Math.random() * val)),
+            clamp(g + Math.floor(Math.random() * val)),
+            clamp(b + Math.floor(Math.random() * val)),
+            this.alpha
         );
     }
-    MixWith(other: rgba, t: number): rgb{
+
+    changeBy(val: number): rgba {
+        const { r, g, b } = rgb.unpack(this.color);
         return new rgba(
-            Math.floor(lerp(this.r, other.r, t)),
-            Math.floor(lerp(this.g, other.g, t)),
-            Math.floor(lerp(this.b, other.b, t)),
-            Math.floor(lerp(this.a, other.a, t))
+            clamp(r + val),
+            clamp(g + val),
+            clamp(b + val),
+            this.alpha
+        );
+    }
+
+    get(): string {
+        const { r, g, b } = rgb.unpack(this.color);
+        return `rgba(${r},${g},${b},${this.alpha / 255})`;
+    }
+
+    Darker(): rgba {
+        const { r, g, b } = rgb.unpack(this.color);
+        return new rgba(r / 2, g / 2, b / 2, this.alpha);
+    }
+
+    MixWith(other: rgba, t: number): rgba {
+        const { r, g, b } = rgb.unpack(this.color);
+        const { r: or, g: og, b: ob } = rgb.unpack(other.color);
+        return new rgba(
+            Math.floor(lerp(r, or, t)),
+            Math.floor(lerp(g, og, t)),
+            Math.floor(lerp(b, ob, t)),
+            Math.floor(lerp(this.alpha, other.alpha, t))
         );
     }
 }
@@ -167,4 +161,7 @@ class rgba extends rgb{
  */
 function lerp(a: number, b: number, t: number): number {
     return a + t * (b - a);
+}
+function clamp(val: number, min: number = 0, max: number = 255): number {
+    return Math.min(Math.max(val, min), max);
 }
