@@ -8,7 +8,7 @@ class RenderManager{
     public static ctx: CanvasRenderingContext2D;
     public static ins: RenderManager;
 
-    private ActiveGUIs: GUI[] = [];
+    public ActiveGUIs: GUI[] = [];
 
     public constructor() {
         RenderManager.canvas = <HTMLCanvasElement>document.getElementById('GameCanvas')!;

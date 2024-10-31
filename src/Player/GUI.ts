@@ -1,9 +1,11 @@
 class GUI{
     public elements: GUIElement[];
+    public interactiveElements: GUIElement[];
     public AABB: AABB;
     public BackgroundImage: HTMLImageElement;
     constructor(width: number, height: number){
         this.elements = [];
+        this.interactiveElements = [];
         this.AABB = new AABB(new Vector2(0, 0), new Vector2(width, height));
 
         this.BackgroundImage = new Image();
@@ -83,17 +85,21 @@ class GUI{
         return this;
     }
     AddButton(AABB: AABB, text: string, onClick: Function): GUI{
-        this.elements.push(new GUIButton(AABB, text, onClick));
+        const button = new GUIButton(AABB, text, onClick);
+        this.elements.push(button);
+        this.interactiveElements.push(button);
         return this;
     }
-    AddTopBar(){
-        this.elements = this.elements.concat(this.GetTopBar());
+    AddTopBar(Header: string){
+        this.elements = this.elements.concat(this.GetTopBar(Header));
+        this.interactiveElements.push(this.elements[this.elements.length-1]);
         return this;
     }
-    private GetTopBar(): GUIElement[]{
+    private GetTopBar(Header: string): GUIElement[]{
         return [
-            new GUISimple(new AABB(new Vector2(0, -25), new Vector2(this.AABB.width, 25)), new rgba(255, 255, 255, 0.5)),
-            new GUIText(new AABB(new Vector2(0, -5), new Vector2(100, 20)), "TopBar", 20)
+            new GUISimple(new AABB(new Vector2(0, -30), new Vector2(this.AABB.width, 25)), new rgba(255, 255, 255, 0.5)),
+            new GUIButton(new AABB(new Vector2(this.AABB.width-25, -27.5), new Vector2(20, 20)), "X", () => this.Close()),
+            new GUIText(new AABB(new Vector2(10, -10), new Vector2(100, 20)), Header, 20),
         ];
     }
 }
@@ -124,7 +130,7 @@ class GUIText extends GUIElement{
     }
     Draw(scale: number, offset: Vector2){
         RenderManager.ctx.fillStyle = "white";
-        RenderManager.ctx.font = `${this.textSize}px Arial`;
+        RenderManager.ctx.font = `${this.textSize}px Tiny5`;
         RenderManager.ctx.fillText(this.text, this.AABB.x*scale+offset.x, this.AABB.y*scale+offset.y);
     }
 }
@@ -149,7 +155,14 @@ class GUIButton extends GUIElement{
         this.onClick = onClick;
     }
     Draw(scale: number, offset: Vector2){
-        
+        RenderManager.ctx.fillStyle = "white";
+        RenderManager.ctx.fillRect(this.AABB.x*scale+offset.x, this.AABB.y*scale+offset.y, this.AABB.width*scale, this.AABB.height*scale);
+        RenderManager.ctx.save();
+        RenderManager.ctx.textAlign = "center";
+        RenderManager.ctx.fillStyle = "black";
+        RenderManager.ctx.font = "20px Tiny5";
+        RenderManager.ctx.fillText(this.text, this.AABB.x*scale+offset.x + this.AABB.width/2 + 1, this.AABB.y*scale+offset.y + this.AABB.height/2 + 6);
+        RenderManager.ctx.restore();
     }
     OnClick(){
         this.onClick();

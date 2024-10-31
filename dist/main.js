@@ -109,7 +109,7 @@ class rgba extends rgb {
     }
     get() {
         const { r, g, b } = rgb.unpack(this.color);
-        return `rgba(${r},${g},${b},${this.alpha / 255})`;
+        return `rgba(${r},${g},${b},${this.alpha})`;
     }
     Darker() {
         const { r, g, b } = rgb.unpack(this.color);
@@ -524,10 +524,12 @@ class Player {
 }
 class GUI {
     elements;
+    interactiveElements;
     AABB;
     BackgroundImage;
     constructor(width, height) {
         this.elements = [];
+        this.interactiveElements = [];
         this.AABB = new AABB(new Vector2(0, 0), new Vector2(width, height));
         this.BackgroundImage = new Image();
         this.SetBackground("Default");
@@ -596,17 +598,21 @@ class GUI {
         return this;
     }
     AddButton(AABB, text, onClick) {
-        this.elements.push(new GUIButton(AABB, text, onClick));
+        const button = new GUIButton(AABB, text, onClick);
+        this.elements.push(button);
+        this.interactiveElements.push(button);
         return this;
     }
-    AddTopBar() {
-        this.elements = this.elements.concat(this.GetTopBar());
+    AddTopBar(Header) {
+        this.elements = this.elements.concat(this.GetTopBar(Header));
+        this.interactiveElements.push(this.elements[this.elements.length - 1]);
         return this;
     }
-    GetTopBar() {
+    GetTopBar(Header) {
         return [
-            new GUISimple(new AABB(new Vector2(0, -25), new Vector2(this.AABB.width, 25)), new rgba(255, 255, 255, 0.5)),
-            new GUIText(new AABB(new Vector2(0, -5), new Vector2(100, 20)), "TopBar", 20)
+            new GUISimple(new AABB(new Vector2(0, -30), new Vector2(this.AABB.width, 25)), new rgba(255, 255, 255, 0.5)),
+            new GUIButton(new AABB(new Vector2(this.AABB.width - 25, -27.5), new Vector2(20, 20)), "X", () => this.Close()),
+            new GUIText(new AABB(new Vector2(10, -10), new Vector2(100, 20)), Header, 20),
         ];
     }
 }
@@ -636,7 +642,7 @@ class GUIText extends GUIElement {
     }
     Draw(scale, offset) {
         RenderManager.ctx.fillStyle = "white";
-        RenderManager.ctx.font = `${this.textSize}px Arial`;
+        RenderManager.ctx.font = `${this.textSize}px Tiny5`;
         RenderManager.ctx.fillText(this.text, this.AABB.x * scale + offset.x, this.AABB.y * scale + offset.y);
     }
 }
@@ -661,6 +667,14 @@ class GUIButton extends GUIElement {
         this.onClick = onClick;
     }
     Draw(scale, offset) {
+        RenderManager.ctx.fillStyle = "white";
+        RenderManager.ctx.fillRect(this.AABB.x * scale + offset.x, this.AABB.y * scale + offset.y, this.AABB.width * scale, this.AABB.height * scale);
+        RenderManager.ctx.save();
+        RenderManager.ctx.textAlign = "center";
+        RenderManager.ctx.fillStyle = "black";
+        RenderManager.ctx.font = "20px Tiny5";
+        RenderManager.ctx.fillText(this.text, this.AABB.x * scale + offset.x + this.AABB.width / 2 + 1, this.AABB.y * scale + offset.y + this.AABB.height / 2 + 6);
+        RenderManager.ctx.restore();
     }
     OnClick() {
         this.onClick();
@@ -881,6 +895,17 @@ class InputManager {
         const color = MapManager.ins.cPlanet.GetDataAt(voxelPos.x, voxelPos.y)?.color;
         console.log('%c color', `background: ${color?.get()}; color: ${color?.get()}`);
         */
+        //check if any GUI element was clicked
+        RenderManager.ins.ActiveGUIs.forEach(gui => {
+            gui.interactiveElements.forEach(element => {
+                console.log(element.AABB, mousePos);
+                if (element.AABB.isDotInside(mousePos.x, mousePos.y)) {
+                    if (element instanceof GUIButton)
+                        element.OnClick();
+                    return;
+                }
+            });
+        });
         MapManager.ins.buildings.forEach(building => {
             if (building.AABB.isDotInside(voxelPos.x + .5, voxelPos.y + .5)) {
                 building.OnClick();
@@ -972,8 +997,8 @@ class Smelter extends Building {
     }
     OpenGUI() {
         const gui = new GUI(800, 400)
-            .AddTopBar()
-            .AddText(new AABB(new Vector2(0, 20), new Vector2(200, 10)), "Smelter", 20);
+            .AddTopBar("Smelter!")
+            .AddText(new AABB(new Vector2(22, 20), new Vector2(200, 10)), "Smelter", 20);
         return gui;
     }
 }

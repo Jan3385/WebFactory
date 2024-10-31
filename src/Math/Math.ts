@@ -137,7 +137,7 @@ class rgba extends rgb{
 
     get(): string {
         const { r, g, b } = rgb.unpack(this.color);
-        return `rgba(${r},${g},${b},${this.alpha / 255})`;
+        return `rgba(${r},${g},${b},${this.alpha})`;
     }
 
     Darker(): rgba {

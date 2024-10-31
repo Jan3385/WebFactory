@@ -150,6 +150,18 @@ class InputManager{
         const color = MapManager.ins.cPlanet.GetDataAt(voxelPos.x, voxelPos.y)?.color;
         console.log('%c color', `background: ${color?.get()}; color: ${color?.get()}`);
         */
+
+        //check if any GUI element was clicked
+        RenderManager.ins.ActiveGUIs.forEach(gui => {
+            gui.interactiveElements.forEach(element => {
+                console.log(element.AABB, mousePos);
+                if(element.AABB.isDotInside(mousePos.x, mousePos.y)) {
+                    if(element instanceof GUIButton) element.OnClick();
+                    return;
+                }
+            });
+        });
+
         MapManager.ins.buildings.forEach(building => {
             if(building.AABB.isDotInside(voxelPos.x + .5, voxelPos.y + .5)){
                 building.OnClick();
