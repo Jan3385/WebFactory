@@ -154,8 +154,7 @@ class InputManager{
         //check if any GUI element was clicked
         RenderManager.ins.ActiveGUIs.forEach(gui => {
             gui.interactiveElements.forEach(element => {
-                console.log(element.AABB, mousePos);
-                if(element.AABB.isDotInside(mousePos.x, mousePos.y)) {
+                if(element.GetOnScreenAABB().isDotInside(mousePos.x, mousePos.y)) {
                     if(element instanceof GUIButton) element.OnClick();
                     return;
                 }

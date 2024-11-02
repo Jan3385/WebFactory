@@ -578,9 +578,6 @@ class GUI {
         //center
         RenderManager.ctx.drawImage(this.BackgroundImage, left, top, right - left, bottom - top, destLeft + scaledBorder, destTop + scaledBorder, (width - 2 * border) * pixelScale, (height - 2 * border) * pixelScale);
     }
-    AddElement(element) {
-        this.elements.push(element);
-    }
     Close() {
         RenderManager.ins.RemoveGUI(this);
     }
@@ -589,35 +586,50 @@ class GUI {
         this.BackgroundImage.src = `Images/GUI/Backgrounds/${backgroundName}.png`;
         return this;
     }
+    AddElement(element) {
+        element.parent = this;
+        this.elements.push(element);
+    }
+    AddInteractiveElement(element) {
+        this.AddElement(element);
+        this.interactiveElements.push(element);
+    }
     AddText(AABB, text, textSize) {
-        this.elements.push(new GUIText(AABB, text, textSize));
+        const element = new GUIText(AABB, text, textSize);
+        this.AddElement(element);
         return this;
     }
     AddImage(AABB, img) {
-        this.elements.push(new GUIImage(AABB, img));
+        const element = new GUIImage(AABB, img);
+        this.AddElement(element);
         return this;
     }
     AddButton(AABB, text, onClick) {
         const button = new GUIButton(AABB, text, onClick);
-        this.elements.push(button);
-        this.interactiveElements.push(button);
+        this.AddInteractiveElement(button);
         return this;
     }
     AddTopBar(Header) {
-        this.elements = this.elements.concat(this.GetTopBar(Header));
-        this.interactiveElements.push(this.elements[this.elements.length - 1]);
+        const elements = this.GetTopBar(Header);
+        const buttonElement = elements.pop();
+        elements.forEach(element => this.AddElement(element));
+        this.AddInteractiveElement(buttonElement);
         return this;
     }
     GetTopBar(Header) {
         return [
             new GUISimple(new AABB(new Vector2(0, -30), new Vector2(this.AABB.width, 25)), new rgba(255, 255, 255, 0.5)),
-            new GUIButton(new AABB(new Vector2(this.AABB.width - 25, -27.5), new Vector2(20, 20)), "X", () => this.Close()),
             new GUIText(new AABB(new Vector2(10, -10), new Vector2(100, 20)), Header, 20),
+            new GUIButton(new AABB(new Vector2(this.AABB.width - 25, -27.5), new Vector2(20, 20)), "X", () => this.Close()),
         ];
     }
 }
 class GUIElement {
     AABB = new AABB(new Vector2(0, 0), new Vector2(1, 1));
+    parent = null;
+    GetOnScreenAABB() {
+        return new AABB(new Vector2(this.AABB.x + this.parent.AABB.x, this.AABB.y + this.parent.AABB.y), new Vector2(this.AABB.width, this.AABB.height));
+    }
 }
 class GUISimple extends GUIElement {
     color;
@@ -898,8 +910,7 @@ class InputManager {
         //check if any GUI element was clicked
         RenderManager.ins.ActiveGUIs.forEach(gui => {
             gui.interactiveElements.forEach(element => {
-                console.log(element.AABB, mousePos);
-                if (element.AABB.isDotInside(mousePos.x, mousePos.y)) {
+                if (element.GetOnScreenAABB().isDotInside(mousePos.x, mousePos.y)) {
                     if (element instanceof GUIButton)
                         element.OnClick();
                     return;
