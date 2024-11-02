@@ -56,6 +56,7 @@ class RenderManager{
             Chunk.PixelSize, Chunk.PixelSize);
 
         //render GUI
+        const GUIScale = 1;
         this.ActiveGUIs.forEach(gui => gui.Draw(1)); //TODO: scale
 
         this.PreviousCameraAABB = Player.ins.camera.AABB.copy();

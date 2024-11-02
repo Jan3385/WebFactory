@@ -2,18 +2,26 @@
 /// <reference path="./Player/InputManager.ts" />
 /// <reference path="./Map/Entities/Enity.ts" />
 /// <reference path="./Map/Entities/Buildings/Smelter.ts" />
+/// <reference path="./Map/Items/Item.ts" />
 
 const fps = 50;
 
 async function Main() {
     // Start
+
+    LoadItems();
+
     Player.ins.move(new Vector2(0, 0)); //updates chunks and moves player
     new RenderManager();
 
-    const a = new Smelter(new Vector2(1, 1), new Vector2(1, 1)); //nestretchuje se to :(
+    const a = new Smelter(new Vector2(1, 1), new Vector2(1, 1));
     a.SetTexture("SigmaMachine");
-    const b = new Smelter(new Vector2(3, 2), new Vector2(1, 1)); //nestretchuje se to :(
+    const b = new Smelter(new Vector2(3, 2), new Vector2(1, 1));
     b.SetTexture("SigmaMachine");
+    const c = new EntityItem(new Vector2(2.5, 2), GetItem(ItemType.CopperOre));
+    const d = new EntityItem(new Vector2(5, 2), GetItem(ItemType.CopperIngot));
+    const e = new EntityItem(new Vector2(6, 2), GetItem(ItemType.IronPlate));
+    const f = new EntityItem(new Vector2(7, 2), GetItem(ItemType.Coal));
 
     let run: boolean = true;
     while (run) {

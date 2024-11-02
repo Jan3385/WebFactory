@@ -1,31 +1,31 @@
-class Entity{
+abstract class Entity{
     public AABB: AABB;
     public position: Vector2;
     public texture: HTMLImageElement | null = null;
-    constructor(position: Vector2, size: Vector2){
+    public renderLayer: number;
+    constructor(position: Vector2, size: Vector2, renderLayer: number = 0){
         this.position = position;
+        this.renderLayer = renderLayer;
         this.AABB = new AABB(
             position.subtract(size.divideAndFloor(2)), 
             size);
-        MapManager.ins.entities.push(this);
+
+        Entity.AddEntity(this);
+    }
+    public static AddEntity(entity: Entity){
+        for(let i = 0; i < MapManager.ins.entities.length; i++){
+            if(MapManager.ins.entities[i].renderLayer > entity.renderLayer){
+                MapManager.ins.entities.splice(i, 0, entity);
+                return;
+            }
+        }
+        MapManager.ins.entities.push(entity);
     }
     SetTexture(texture: string){
         this.texture = new Image(this.AABB.width*Chunk.PixelSize, this.AABB.height*Chunk.PixelSize);
         this.texture.src = "Images/Entities/"+texture+".png";
     }
-    Draw(cameraOffset: Vector2){
-        if(this.texture == null) {
-            console.error("Entity texture is null");
-            return;
-        };
-
-        RenderManager.ctx.drawImage(
-            this.texture, 
-            this.position.x * Chunk.PixelSize + cameraOffset.x, 
-            this.position.y * Chunk.PixelSize + cameraOffset.y,
-            this.AABB.width*Chunk.PixelSize,
-            this.AABB.height*Chunk.PixelSize);
-    }
+    abstract Draw(cameraOffset: Vector2): void;
     OnClick(): void{ };
     /*
     * offsets by half a block
@@ -57,6 +57,19 @@ abstract class Building extends Entity{
     }
     static override GetAtPrecise(pos: Vector2): Entity[] | null {
         return MapManager.ins.buildings.filter(entity => entity.AABB.isDotInside(pos.x, pos.y));
+    }
+    Draw(cameraOffset: Vector2): void {
+        if(this.texture == null) {
+            console.error("Entity texture is null");
+            return;
+        };
+
+        RenderManager.ctx.drawImage(
+            this.texture, 
+            this.position.x * Chunk.PixelSize + cameraOffset.x, 
+            this.position.y * Chunk.PixelSize + cameraOffset.y,
+            this.AABB.width*Chunk.PixelSize,
+            this.AABB.height*Chunk.PixelSize);
     }
 
     public abstract Act(deltaTime: number): void;

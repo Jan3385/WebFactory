@@ -24,6 +24,9 @@ class Vector2{
     multiply(val: number): Vector2{
         return new Vector2(this.x * val, this.y * val);
     }
+    divide(val: number): Vector2{
+        return new Vector2(this.x / val, this.y / val);
+    }
     divideAndFloor(val: number): Vector2{
         return new Vector2(Math.floor(this.x / val), Math.floor(this.y / val));
     }

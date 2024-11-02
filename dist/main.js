@@ -25,6 +25,9 @@ class Vector2 {
     multiply(val) {
         return new Vector2(this.x * val, this.y * val);
     }
+    divide(val) {
+        return new Vector2(this.x / val, this.y / val);
+    }
     divideAndFloor(val) {
         return new Vector2(Math.floor(this.x / val), Math.floor(this.y / val));
     }
@@ -729,6 +732,7 @@ class RenderManager {
         IndicatorImg.src = "images/indicators/MouseIndicator.png";
         RenderManager.ctx.drawImage(IndicatorImg, InputManager.ins.mouseIndicatorPos.x * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().x, InputManager.ins.mouseIndicatorPos.y * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().y, Chunk.PixelSize, Chunk.PixelSize);
         //render GUI
+        const GUIScale = 1;
         this.ActiveGUIs.forEach(gui => gui.Draw(1)); //TODO: scale
         this.PreviousCameraAABB = Player.ins.camera.AABB.copy();
         this.PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
@@ -900,6 +904,7 @@ class InputManager {
     //Mouse
     onMouseDown(event) {
         const mousePos = new Vector2(event.clientX, event.clientY);
+        const worldPos = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divide(Chunk.PixelSize);
         const voxelPos = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
         /*
         console.log(voxelPos);
@@ -907,6 +912,12 @@ class InputManager {
         const color = MapManager.ins.cPlanet.GetDataAt(voxelPos.x, voxelPos.y)?.color;
         console.log('%c color', `background: ${color?.get()}; color: ${color?.get()}`);
         */
+        //check if item was clicked
+        MapManager.ins.entities.forEach(entity => {
+            if (entity instanceof EntityItem && entity.AABB.isDotInside(worldPos.x, worldPos.y)) {
+                entity.OnClick();
+            }
+        });
         //check if any GUI element was clicked
         RenderManager.ins.ActiveGUIs.forEach(gui => {
             gui.interactiveElements.forEach(element => {
@@ -945,22 +956,25 @@ class Entity {
     AABB;
     position;
     texture = null;
-    constructor(position, size) {
+    renderLayer;
+    constructor(position, size, renderLayer = 0) {
         this.position = position;
+        this.renderLayer = renderLayer;
         this.AABB = new AABB(position.subtract(size.divideAndFloor(2)), size);
-        MapManager.ins.entities.push(this);
+        Entity.AddEntity(this);
+    }
+    static AddEntity(entity) {
+        for (let i = 0; i < MapManager.ins.entities.length; i++) {
+            if (MapManager.ins.entities[i].renderLayer > entity.renderLayer) {
+                MapManager.ins.entities.splice(i, 0, entity);
+                return;
+            }
+        }
+        MapManager.ins.entities.push(entity);
     }
     SetTexture(texture) {
         this.texture = new Image(this.AABB.width * Chunk.PixelSize, this.AABB.height * Chunk.PixelSize);
         this.texture.src = "Images/Entities/" + texture + ".png";
-    }
-    Draw(cameraOffset) {
-        if (this.texture == null) {
-            console.error("Entity texture is null");
-            return;
-        }
-        ;
-        RenderManager.ctx.drawImage(this.texture, this.position.x * Chunk.PixelSize + cameraOffset.x, this.position.y * Chunk.PixelSize + cameraOffset.y, this.AABB.width * Chunk.PixelSize, this.AABB.height * Chunk.PixelSize);
     }
     OnClick() { }
     ;
@@ -995,6 +1009,14 @@ class Building extends Entity {
     static GetAtPrecise(pos) {
         return MapManager.ins.buildings.filter(entity => entity.AABB.isDotInside(pos.x, pos.y));
     }
+    Draw(cameraOffset) {
+        if (this.texture == null) {
+            console.error("Entity texture is null");
+            return;
+        }
+        ;
+        RenderManager.ctx.drawImage(this.texture, this.position.x * Chunk.PixelSize + cameraOffset.x, this.position.y * Chunk.PixelSize + cameraOffset.y, this.AABB.width * Chunk.PixelSize, this.AABB.height * Chunk.PixelSize);
+    }
 }
 class Smelter extends Building {
     constructor(position, size) {
@@ -1013,19 +1035,95 @@ class Smelter extends Building {
         return gui;
     }
 }
+class EntityItem extends Entity {
+    item;
+    static ITEM_SIZE = new Vector2(0.9, 0.9); // 1,1 = 1 block
+    constructor(position, item) {
+        super(position, EntityItem.ITEM_SIZE, 5);
+        this.item = item;
+    }
+    Draw(cameraOffset) {
+        RenderManager.ctx.drawImage(this.item.image, this.position.x * Chunk.PixelSize + cameraOffset.x, this.position.y * Chunk.PixelSize + cameraOffset.y, this.AABB.width * Chunk.PixelSize, this.AABB.height * Chunk.PixelSize);
+    }
+    OnClick() {
+        this.destroy();
+    }
+}
+var ItemType;
+(function (ItemType) {
+    ItemType[ItemType["IronOre"] = 0] = "IronOre";
+    ItemType[ItemType["IronIngot"] = 1] = "IronIngot";
+    ItemType[ItemType["CopperOre"] = 2] = "CopperOre";
+    ItemType[ItemType["CopperIngot"] = 3] = "CopperIngot";
+    ItemType[ItemType["IronPlate"] = 4] = "IronPlate";
+    ItemType[ItemType["Coal"] = 5] = "Coal";
+})(ItemType || (ItemType = {}));
+const ITEM_ICON_PREFIX = "Images/Items/";
+const Items = {
+    [ItemType.IronOre]: {
+        name: "Iron Ore",
+        image: new Image(32, 32),
+        description: "A chunk of iron ore",
+        weight: 1,
+    },
+    [ItemType.IronIngot]: {
+        name: "Iron Ingot",
+        image: new Image(32, 32),
+        description: "A bar of iron",
+        weight: 1,
+    },
+    [ItemType.CopperOre]: {
+        name: "Copper Ore",
+        image: new Image(32, 32),
+        description: "A chunk of copper ore",
+        weight: 1,
+    },
+    [ItemType.CopperIngot]: {
+        name: "Copper Ingot",
+        image: new Image(32, 32),
+        description: "A bar of copper",
+        weight: 1,
+    },
+    [ItemType.IronPlate]: {
+        name: "Iron Plate",
+        image: new Image(32, 32),
+        description: "A plate of iron",
+        weight: 1,
+    },
+    [ItemType.Coal]: {
+        name: "Coal",
+        image: new Image(32, 32),
+        description: "A chunk of coal",
+        weight: 1,
+    },
+};
+function GetItem(type) {
+    return Items[type];
+}
+function LoadItems() {
+    for (let i = 0; i < Object.keys(Items).length; i++) {
+        GetItem(i).image.src = ITEM_ICON_PREFIX + GetItem(i).name.replace(/\s+/g, '_').toLowerCase() + ".png"; //replace spaces with underscores and find item image
+    }
+}
 /// <reference path="./Player/Player.ts" />
 /// <reference path="./Player/InputManager.ts" />
 /// <reference path="./Map/Entities/Enity.ts" />
 /// <reference path="./Map/Entities/Buildings/Smelter.ts" />
+/// <reference path="./Map/Items/Item.ts" />
 const fps = 50;
 async function Main() {
     // Start
+    LoadItems();
     Player.ins.move(new Vector2(0, 0)); //updates chunks and moves player
     new RenderManager();
-    const a = new Smelter(new Vector2(1, 1), new Vector2(1, 1)); //nestretchuje se to :(
+    const a = new Smelter(new Vector2(1, 1), new Vector2(1, 1));
     a.SetTexture("SigmaMachine");
-    const b = new Smelter(new Vector2(3, 2), new Vector2(1, 1)); //nestretchuje se to :(
+    const b = new Smelter(new Vector2(3, 2), new Vector2(1, 1));
     b.SetTexture("SigmaMachine");
+    const c = new EntityItem(new Vector2(2.5, 2), GetItem(ItemType.CopperOre));
+    const d = new EntityItem(new Vector2(5, 2), GetItem(ItemType.CopperIngot));
+    const e = new EntityItem(new Vector2(6, 2), GetItem(ItemType.IronPlate));
+    const f = new EntityItem(new Vector2(7, 2), GetItem(ItemType.Coal));
     let run = true;
     while (run) {
         // Update loop

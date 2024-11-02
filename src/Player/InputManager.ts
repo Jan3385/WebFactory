@@ -143,6 +143,7 @@ class InputManager{
 
     onMouseDown(event: MouseEvent){
         const mousePos: Vector2 = new Vector2(event.clientX, event.clientY);
+        const worldPos: Vector2 = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divide(Chunk.PixelSize);
         const voxelPos: Vector2 = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
         /*
         console.log(voxelPos);
@@ -150,6 +151,12 @@ class InputManager{
         const color = MapManager.ins.cPlanet.GetDataAt(voxelPos.x, voxelPos.y)?.color;
         console.log('%c color', `background: ${color?.get()}; color: ${color?.get()}`);
         */
+
+        //check if item was clicked
+        MapManager.ins.entities.forEach(entity => {
+            if(entity instanceof EntityItem && entity.AABB.isDotInside(worldPos.x, worldPos.y)){
+                entity.OnClick();
+        }});
 
         //check if any GUI element was clicked
         RenderManager.ins.ActiveGUIs.forEach(gui => {
