@@ -39,6 +39,13 @@ abstract class Entity{
     public destroy(): void{
         MapManager.ins.entities.splice(MapManager.ins.entities.indexOf(this), 1);
     }
+    //returns -1 if no entity found, else returns entity index
+    public static IsInsideEntity(pos: Vector2): number{
+        for(let i = MapManager.ins.entities.length-1; i >= 0; i--){
+            if(MapManager.ins.entities[i].AABB.isDotInside(pos.x, pos.y)) return i;
+        }
+        return -1;
+    }
 }
 abstract class Building extends Entity{
     constructor(position: Vector2, size: Vector2){

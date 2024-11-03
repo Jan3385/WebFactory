@@ -18,6 +18,8 @@ class RenderManager{
         window.addEventListener('resize', this.OnWindowResize);
         this.OnWindowResize();
 
+        this.IndicatorImg.src = "images/indicators/MouseIndicator.png";
+
         //TODO: temp
         //const gui = new GUI(200, 200);
     }
@@ -46,18 +48,11 @@ class RenderManager{
 
         Player.ins.Draw(Player.ins.camera.GetCameraOffset());
 
-        //render mouse indicator
-        const IndicatorImg = new Image(Chunk.PixelSize, Chunk.PixelSize);
-        IndicatorImg.src = "images/indicators/MouseIndicator.png";
-        RenderManager.ctx.drawImage(
-            IndicatorImg, 
-            InputManager.ins.mouseIndicatorPos.x * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().x, 
-            InputManager.ins.mouseIndicatorPos.y * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().y,
-            Chunk.PixelSize, Chunk.PixelSize);
+        this.RenderMouseIndicator(InputManager.ins.mousePos);
 
         //render GUI
-        const GUIScale = 1;
-        this.ActiveGUIs.forEach(gui => gui.Draw(1)); //TODO: scale
+        const GUIScale = GUI.GetGUIScale();
+        this.ActiveGUIs.forEach(gui => gui.Draw(GUIScale));
 
         this.PreviousCameraAABB = Player.ins.camera.AABB.copy();
         this.PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
@@ -68,6 +63,46 @@ class RenderManager{
         RenderManager.canvas.height = window.innerHeight;
         RenderManager.ins.Draw();
         RenderManager.ctx.imageSmoothingEnabled = false;
+    }
+
+    IndicatorImg = new Image(Chunk.PixelSize, Chunk.PixelSize);
+    public RenderMouseIndicator(pos: Vector2){
+        const camOffset = Player.ins.camera.GetCameraOffset();
+
+        const worldPos: Vector2 = pos.subtract(camOffset).divide(Chunk.PixelSize);
+
+        const EntityMouseIndex = Entity.IsInsideEntity(worldPos);
+        if(EntityMouseIndex != -1){
+            const entity = MapManager.ins.entities[EntityMouseIndex];
+            this.DrawIndicator(
+                new AABB(
+                    new Vector2(
+                        entity.position.x * Chunk.PixelSize + camOffset.x, 
+                        entity.position.y * Chunk.PixelSize + camOffset.y),
+                    new Vector2(
+                        entity.AABB.width * Chunk.PixelSize, 
+                        entity.AABB.height * Chunk.PixelSize)
+                )
+            );
+            return;
+        }else{
+            const voxelPos: Vector2 = pos.subtract(camOffset).divideAndFloor(Chunk.PixelSize);
+            this.DrawIndicator(
+                new AABB(
+                    new Vector2(
+                        voxelPos.x * Chunk.PixelSize + camOffset.x, 
+                        voxelPos.y * Chunk.PixelSize + camOffset.y),
+                    new Vector2(Chunk.PixelSize, Chunk.PixelSize)
+                )
+            );
+        }
+        
+    }
+    private DrawIndicator(at: AABB){
+        RenderManager.ctx.drawImage(
+            this.IndicatorImg, 
+            at.x, at.y,
+            at.width, at.height);
     }
 
     public AddGUI(gui: GUI){

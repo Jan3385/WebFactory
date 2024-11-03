@@ -15,15 +15,15 @@ class GUI{
         RenderManager.ins.AddGUI(this);
     }
     MoveToMiddleOfScreen(){
-        this.AABB.x = window.innerWidth/2 - this.AABB.width/2;
-        this.AABB.y = window.innerHeight/2 - this.AABB.height/2;
+        this.AABB.x = 1920/2 - this.AABB.width/2;
+        this.AABB.y = 1080/2 - this.AABB.height/2;
     }
     Draw(scale: number){
         //draw background
         this.DrawBackground9Slice(scale, 16);
 
 
-        this.elements.forEach(guiElement => guiElement.Draw(scale, new Vector2(this.AABB.x, this.AABB.y)));
+        this.elements.forEach(guiElement => guiElement.Draw(scale, new Vector2(this.AABB.x*scale, this.AABB.y*scale)));
     }
     private DrawBackgroundStretch(scale: number){
         RenderManager.ctx.drawImage(this.BackgroundImage, this.AABB.x*scale, this.AABB.y*scale, this.AABB.width*scale, this.AABB.height*scale);
@@ -72,6 +72,10 @@ class GUI{
         this.BackgroundImage.src = `Images/GUI/Backgrounds/${backgroundName}.png`;
         return this;
     }
+    AddSimple(AABB: AABB, color: rgba): GUI{
+        this.AddElement(new GUISimple(AABB, color));
+        return this;
+    }
     AddElement(element: GUIElement){
         element.parent = this;
         this.elements.push(element);
@@ -95,29 +99,31 @@ class GUI{
         this.AddInteractiveElement(button);
         return this;
     }
-    AddTopBar(Header: string){
-        const elements = this.GetTopBar(Header);
-        const buttonElement = elements.pop()!;
-        elements.forEach(element => this.AddElement(element));
-        this.AddInteractiveElement(buttonElement);
+    AddImageButton(AABB: AABB, img: HTMLImageElement, onClick: Function): GUI{
+        const button = new GUIImageButton(AABB, img, onClick);
+        this.AddInteractiveElement(button);
         return this;
     }
-    private GetTopBar(Header: string): GUIElement[]{
-        return [
-            new GUISimple(new AABB(new Vector2(0, -30), new Vector2(this.AABB.width, 25)), new rgba(255, 255, 255, 0.5)),
-            new GUIText(new AABB(new Vector2(10, -10), new Vector2(100, 20)), Header, 20),
-            new GUIButton(new AABB(new Vector2(this.AABB.width-25, -27.5), new Vector2(20, 20)), "X", () => this.Close()),
-        ];
+    AddTopBar(Header: string){
+        this.AddSimple(new AABB(new Vector2(0, -30), new Vector2(this.AABB.width, 25)), new rgba(255, 255, 255, 0.5));
+        this.AddText(new AABB(new Vector2(10, -10), new Vector2(100, 20)), Header, 20);
+        const closeButtonImage = new Image();
+        closeButtonImage.src = "Images/GUI/x.png";
+        this.AddImageButton(new AABB(new Vector2(this.AABB.width-25, -27.5), new Vector2(20, 20)), closeButtonImage, () => this.Close());
+        return this;
+    }
+    public static GetGUIScale(): number{
+        return Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
     }
 }
 abstract class GUIElement{
     public AABB: AABB = new AABB(new Vector2(0, 0), new Vector2(1, 1));
     public parent: GUI | null = null;
     abstract Draw(scale: number, offset: Vector2): void;
-    GetOnScreenAABB(): AABB{
+    GetOnScreenAABB(scale: number): AABB{
         return new AABB(
-            new Vector2(this.AABB.x + this.parent!.AABB.x, this.AABB.y + this.parent!.AABB.y),
-            new Vector2(this.AABB.width, this.AABB.height)
+            new Vector2(this.AABB.x * scale + this.parent!.AABB.x * scale, this.AABB.y * scale + this.parent!.AABB.y * scale),
+            new Vector2(this.AABB.width * scale, this.AABB.height * scale)
         )
     }
 }
@@ -144,7 +150,7 @@ class GUIText extends GUIElement{
     }
     Draw(scale: number, offset: Vector2){
         RenderManager.ctx.fillStyle = "white";
-        RenderManager.ctx.font = `${this.textSize}px Tiny5`;
+        RenderManager.ctx.font = `${this.textSize*scale}px Tiny5`;
         RenderManager.ctx.fillText(this.text, this.AABB.x*scale+offset.x, this.AABB.y*scale+offset.y);
     }
 }
@@ -159,14 +165,22 @@ class GUIImage extends GUIElement{
         RenderManager.ctx.drawImage(this.img, this.AABB.x*scale, this.AABB.y*scale, this.AABB.width*scale, this.AABB.height*scale);
     }
 }
-class GUIButton extends GUIElement{
-    public text: string;
+abstract class GUIInteractable extends GUIElement{
     public onClick: Function;
-    constructor(AABB: AABB, text: string, onClick: Function){
+    constructor(AABB: AABB, onClick: Function){
         super();
         this.AABB = AABB;
-        this.text = text;
         this.onClick = onClick;
+    }
+    OnClick(){
+        this.onClick();
+    }
+}
+class GUIButton extends GUIInteractable{
+    public text: string;
+    constructor(AABB: AABB, text: string, onClick: Function){
+        super(AABB, onClick);
+        this.text = text;
     }
     Draw(scale: number, offset: Vector2): void{
         RenderManager.ctx.fillStyle = "white";
@@ -178,7 +192,14 @@ class GUIButton extends GUIElement{
         RenderManager.ctx.fillText(this.text, this.AABB.x*scale+offset.x + this.AABB.width/2 + 1, this.AABB.y*scale+offset.y + this.AABB.height/2 + 6);
         RenderManager.ctx.restore();
     }
-    OnClick(){
-        this.onClick();
+}
+class GUIImageButton extends GUIInteractable{
+    public img: HTMLImageElement;
+    constructor(AABB: AABB, img: HTMLImageElement, onClick: Function){
+        super(AABB, onClick);
+        this.img = img;
+    }
+    Draw(scale: number, offset: Vector2): void{
+        RenderManager.ctx.drawImage(this.img, this.AABB.x*scale+offset.x, this.AABB.y*scale+offset.y, this.AABB.width*scale, this.AABB.height*scale);
     }
 }

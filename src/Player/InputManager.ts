@@ -10,8 +10,6 @@ class InputManager{
 
     public clearMap: {xMinus: boolean, xPlus: boolean, yMinus: boolean, yPlus: boolean};
 
-    public mouseIndicatorPos: Vector2;
-
     constructor() {
         this.MovementVector = new Vector2(0, 0);
         this.usedInput = false;
@@ -20,7 +18,7 @@ class InputManager{
 
         this.clearMap = {xMinus: false, xPlus: false, yMinus: false, yPlus: false};
 
-        this.mouseIndicatorPos = new Vector2(0, 0);
+        this.mousePos = new Vector2(0, 0);
 
         window.addEventListener("keydown", this.onKeyDown, false);
         window.addEventListener("keyup", this.onKeyUp, false);
@@ -156,13 +154,16 @@ class InputManager{
         MapManager.ins.entities.forEach(entity => {
             if(entity instanceof EntityItem && entity.AABB.isDotInside(worldPos.x, worldPos.y)){
                 entity.OnClick();
-        }});
+                return;
+            }
+        });
 
         //check if any GUI element was clicked
+        const GUIScale = GUI.GetGUIScale();
         RenderManager.ins.ActiveGUIs.forEach(gui => {
             gui.interactiveElements.forEach(element => {
-                if(element.GetOnScreenAABB().isDotInside(mousePos.x, mousePos.y)) {
-                    if(element instanceof GUIButton) element.OnClick();
+                if(element.GetOnScreenAABB(GUIScale).isDotInside(mousePos.x, mousePos.y)) {
+                    if(element instanceof GUIInteractable) element.OnClick();
                     return;
                 }
             });
@@ -171,16 +172,17 @@ class InputManager{
         MapManager.ins.buildings.forEach(building => {
             if(building.AABB.isDotInside(voxelPos.x + .5, voxelPos.y + .5)){
                 building.OnClick();
-        }});
+                return;
+            }
+        });
     }
     onMouseUp(event: MouseEvent){
         
     }
-    private previouseMousePos: Vector2 = new Vector2(0, 0);
+    public mousePos: Vector2;
     onMouseMove(event: MouseEvent){
-        const mousePos: Vector2 = new Vector2(event.clientX, event.clientY);
-        InputManager.ins.previouseMousePos = mousePos.copy();
-        const voxelPos: Vector2 = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
+        InputManager.ins.mousePos = new Vector2(event.clientX, event.clientY);
+        const voxelPos: Vector2 = InputManager.ins.mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
 
         //InputManager.ins.UpdateMouseIndicator(mousePos); //already done by player move
     }  
@@ -189,8 +191,8 @@ class InputManager{
         Chunk.PixelSize = clamp(Chunk.PixelSize + WheelDir, 6, 30);
     }
 
-    UpdateMouseIndicator(mousePos: Vector2 = InputManager.ins.previouseMousePos){
-        const voxelPos: Vector2 = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
-        InputManager.ins.mouseIndicatorPos = voxelPos;
-    }
+    //UpdateMouseIndicator(mousePos: Vector2 = InputManager.ins.previouseMousePos){
+    //    const voxelPos: Vector2 = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
+    //    InputManager.ins.mouseIndicatorPos = voxelPos;
+    //}
 }

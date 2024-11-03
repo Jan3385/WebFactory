@@ -514,7 +514,7 @@ class Player {
         this.position = this.position.add(dir.multiply(this.Speed));
         this.camera.UpdateCamera();
         //update mouse indicator
-        InputManager.ins.UpdateMouseIndicator();
+        //InputManager.ins.UpdateMouseIndicator();
     }
     setPosition(pos) {
         this.position = pos;
@@ -540,13 +540,13 @@ class GUI {
         RenderManager.ins.AddGUI(this);
     }
     MoveToMiddleOfScreen() {
-        this.AABB.x = window.innerWidth / 2 - this.AABB.width / 2;
-        this.AABB.y = window.innerHeight / 2 - this.AABB.height / 2;
+        this.AABB.x = 1920 / 2 - this.AABB.width / 2;
+        this.AABB.y = 1080 / 2 - this.AABB.height / 2;
     }
     Draw(scale) {
         //draw background
         this.DrawBackground9Slice(scale, 16);
-        this.elements.forEach(guiElement => guiElement.Draw(scale, new Vector2(this.AABB.x, this.AABB.y)));
+        this.elements.forEach(guiElement => guiElement.Draw(scale, new Vector2(this.AABB.x * scale, this.AABB.y * scale)));
     }
     DrawBackgroundStretch(scale) {
         RenderManager.ctx.drawImage(this.BackgroundImage, this.AABB.x * scale, this.AABB.y * scale, this.AABB.width * scale, this.AABB.height * scale);
@@ -589,6 +589,10 @@ class GUI {
         this.BackgroundImage.src = `Images/GUI/Backgrounds/${backgroundName}.png`;
         return this;
     }
+    AddSimple(AABB, color) {
+        this.AddElement(new GUISimple(AABB, color));
+        return this;
+    }
     AddElement(element) {
         element.parent = this;
         this.elements.push(element);
@@ -612,26 +616,28 @@ class GUI {
         this.AddInteractiveElement(button);
         return this;
     }
-    AddTopBar(Header) {
-        const elements = this.GetTopBar(Header);
-        const buttonElement = elements.pop();
-        elements.forEach(element => this.AddElement(element));
-        this.AddInteractiveElement(buttonElement);
+    AddImageButton(AABB, img, onClick) {
+        const button = new GUIImageButton(AABB, img, onClick);
+        this.AddInteractiveElement(button);
         return this;
     }
-    GetTopBar(Header) {
-        return [
-            new GUISimple(new AABB(new Vector2(0, -30), new Vector2(this.AABB.width, 25)), new rgba(255, 255, 255, 0.5)),
-            new GUIText(new AABB(new Vector2(10, -10), new Vector2(100, 20)), Header, 20),
-            new GUIButton(new AABB(new Vector2(this.AABB.width - 25, -27.5), new Vector2(20, 20)), "X", () => this.Close()),
-        ];
+    AddTopBar(Header) {
+        this.AddSimple(new AABB(new Vector2(0, -30), new Vector2(this.AABB.width, 25)), new rgba(255, 255, 255, 0.5));
+        this.AddText(new AABB(new Vector2(10, -10), new Vector2(100, 20)), Header, 20);
+        const closeButtonImage = new Image();
+        closeButtonImage.src = "Images/GUI/x.png";
+        this.AddImageButton(new AABB(new Vector2(this.AABB.width - 25, -27.5), new Vector2(20, 20)), closeButtonImage, () => this.Close());
+        return this;
+    }
+    static GetGUIScale() {
+        return Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
     }
 }
 class GUIElement {
     AABB = new AABB(new Vector2(0, 0), new Vector2(1, 1));
     parent = null;
-    GetOnScreenAABB() {
-        return new AABB(new Vector2(this.AABB.x + this.parent.AABB.x, this.AABB.y + this.parent.AABB.y), new Vector2(this.AABB.width, this.AABB.height));
+    GetOnScreenAABB(scale) {
+        return new AABB(new Vector2(this.AABB.x * scale + this.parent.AABB.x * scale, this.AABB.y * scale + this.parent.AABB.y * scale), new Vector2(this.AABB.width * scale, this.AABB.height * scale));
     }
 }
 class GUISimple extends GUIElement {
@@ -657,7 +663,7 @@ class GUIText extends GUIElement {
     }
     Draw(scale, offset) {
         RenderManager.ctx.fillStyle = "white";
-        RenderManager.ctx.font = `${this.textSize}px Tiny5`;
+        RenderManager.ctx.font = `${this.textSize * scale}px Tiny5`;
         RenderManager.ctx.fillText(this.text, this.AABB.x * scale + offset.x, this.AABB.y * scale + offset.y);
     }
 }
@@ -672,14 +678,22 @@ class GUIImage extends GUIElement {
         RenderManager.ctx.drawImage(this.img, this.AABB.x * scale, this.AABB.y * scale, this.AABB.width * scale, this.AABB.height * scale);
     }
 }
-class GUIButton extends GUIElement {
-    text;
+class GUIInteractable extends GUIElement {
     onClick;
-    constructor(AABB, text, onClick) {
+    constructor(AABB, onClick) {
         super();
         this.AABB = AABB;
-        this.text = text;
         this.onClick = onClick;
+    }
+    OnClick() {
+        this.onClick();
+    }
+}
+class GUIButton extends GUIInteractable {
+    text;
+    constructor(AABB, text, onClick) {
+        super(AABB, onClick);
+        this.text = text;
     }
     Draw(scale, offset) {
         RenderManager.ctx.fillStyle = "white";
@@ -691,8 +705,15 @@ class GUIButton extends GUIElement {
         RenderManager.ctx.fillText(this.text, this.AABB.x * scale + offset.x + this.AABB.width / 2 + 1, this.AABB.y * scale + offset.y + this.AABB.height / 2 + 6);
         RenderManager.ctx.restore();
     }
-    OnClick() {
-        this.onClick();
+}
+class GUIImageButton extends GUIInteractable {
+    img;
+    constructor(AABB, img, onClick) {
+        super(AABB, onClick);
+        this.img = img;
+    }
+    Draw(scale, offset) {
+        RenderManager.ctx.drawImage(this.img, this.AABB.x * scale + offset.x, this.AABB.y * scale + offset.y, this.AABB.width * scale, this.AABB.height * scale);
     }
 }
 /// <reference path="./Math/Math.ts" />
@@ -710,6 +731,7 @@ class RenderManager {
         RenderManager.ins = this;
         window.addEventListener('resize', this.OnWindowResize);
         this.OnWindowResize();
+        this.IndicatorImg.src = "images/indicators/MouseIndicator.png";
         //TODO: temp
         //const gui = new GUI(200, 200);
     }
@@ -727,13 +749,10 @@ class RenderManager {
         //draw entities
         MapManager.ins.entities.forEach(entity => entity.Draw(cameraOffset));
         Player.ins.Draw(Player.ins.camera.GetCameraOffset());
-        //render mouse indicator
-        const IndicatorImg = new Image(Chunk.PixelSize, Chunk.PixelSize);
-        IndicatorImg.src = "images/indicators/MouseIndicator.png";
-        RenderManager.ctx.drawImage(IndicatorImg, InputManager.ins.mouseIndicatorPos.x * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().x, InputManager.ins.mouseIndicatorPos.y * Chunk.PixelSize + Player.ins.camera.GetCameraOffset().y, Chunk.PixelSize, Chunk.PixelSize);
+        this.RenderMouseIndicator(InputManager.ins.mousePos);
         //render GUI
-        const GUIScale = 1;
-        this.ActiveGUIs.forEach(gui => gui.Draw(1)); //TODO: scale
+        const GUIScale = GUI.GetGUIScale();
+        this.ActiveGUIs.forEach(gui => gui.Draw(GUIScale));
         this.PreviousCameraAABB = Player.ins.camera.AABB.copy();
         this.PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
     }
@@ -742,6 +761,24 @@ class RenderManager {
         RenderManager.canvas.height = window.innerHeight;
         RenderManager.ins.Draw();
         RenderManager.ctx.imageSmoothingEnabled = false;
+    }
+    IndicatorImg = new Image(Chunk.PixelSize, Chunk.PixelSize);
+    RenderMouseIndicator(pos) {
+        const camOffset = Player.ins.camera.GetCameraOffset();
+        const worldPos = pos.subtract(camOffset).divide(Chunk.PixelSize);
+        const EntityMouseIndex = Entity.IsInsideEntity(worldPos);
+        if (EntityMouseIndex != -1) {
+            const entity = MapManager.ins.entities[EntityMouseIndex];
+            this.DrawIndicator(new AABB(new Vector2(entity.position.x * Chunk.PixelSize + camOffset.x, entity.position.y * Chunk.PixelSize + camOffset.y), new Vector2(entity.AABB.width * Chunk.PixelSize, entity.AABB.height * Chunk.PixelSize)));
+            return;
+        }
+        else {
+            const voxelPos = pos.subtract(camOffset).divideAndFloor(Chunk.PixelSize);
+            this.DrawIndicator(new AABB(new Vector2(voxelPos.x * Chunk.PixelSize + camOffset.x, voxelPos.y * Chunk.PixelSize + camOffset.y), new Vector2(Chunk.PixelSize, Chunk.PixelSize)));
+        }
+    }
+    DrawIndicator(at) {
+        RenderManager.ctx.drawImage(this.IndicatorImg, at.x, at.y, at.width, at.height);
     }
     AddGUI(gui) {
         this.ActiveGUIs.push(gui);
@@ -772,14 +809,13 @@ class InputManager {
     inputPresses;
     removeInputValues;
     clearMap;
-    mouseIndicatorPos;
     constructor() {
         this.MovementVector = new Vector2(0, 0);
         this.usedInput = false;
         this.inputPresses = [];
         this.removeInputValues = [];
         this.clearMap = { xMinus: false, xPlus: false, yMinus: false, yPlus: false };
-        this.mouseIndicatorPos = new Vector2(0, 0);
+        this.mousePos = new Vector2(0, 0);
         window.addEventListener("keydown", this.onKeyDown, false);
         window.addEventListener("keyup", this.onKeyUp, false);
         window.addEventListener("mousedown", this.onMouseDown, false);
@@ -916,13 +952,15 @@ class InputManager {
         MapManager.ins.entities.forEach(entity => {
             if (entity instanceof EntityItem && entity.AABB.isDotInside(worldPos.x, worldPos.y)) {
                 entity.OnClick();
+                return;
             }
         });
         //check if any GUI element was clicked
+        const GUIScale = GUI.GetGUIScale();
         RenderManager.ins.ActiveGUIs.forEach(gui => {
             gui.interactiveElements.forEach(element => {
-                if (element.GetOnScreenAABB().isDotInside(mousePos.x, mousePos.y)) {
-                    if (element instanceof GUIButton)
+                if (element.GetOnScreenAABB(GUIScale).isDotInside(mousePos.x, mousePos.y)) {
+                    if (element instanceof GUIInteractable)
                         element.OnClick();
                     return;
                 }
@@ -931,25 +969,21 @@ class InputManager {
         MapManager.ins.buildings.forEach(building => {
             if (building.AABB.isDotInside(voxelPos.x + .5, voxelPos.y + .5)) {
                 building.OnClick();
+                return;
             }
         });
     }
     onMouseUp(event) {
     }
-    previouseMousePos = new Vector2(0, 0);
+    mousePos;
     onMouseMove(event) {
-        const mousePos = new Vector2(event.clientX, event.clientY);
-        InputManager.ins.previouseMousePos = mousePos.copy();
-        const voxelPos = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
+        InputManager.ins.mousePos = new Vector2(event.clientX, event.clientY);
+        const voxelPos = InputManager.ins.mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
         //InputManager.ins.UpdateMouseIndicator(mousePos); //already done by player move
     }
     onMouseWheel(event) {
         const WheelDir = event.deltaY > 0 ? -1 : 1;
         Chunk.PixelSize = clamp(Chunk.PixelSize + WheelDir, 6, 30);
-    }
-    UpdateMouseIndicator(mousePos = InputManager.ins.previouseMousePos) {
-        const voxelPos = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
-        InputManager.ins.mouseIndicatorPos = voxelPos;
     }
 }
 class Entity {
@@ -987,6 +1021,14 @@ class Entity {
     }
     destroy() {
         MapManager.ins.entities.splice(MapManager.ins.entities.indexOf(this), 1);
+    }
+    //returns -1 if no entity found, else returns entity index
+    static IsInsideEntity(pos) {
+        for (let i = MapManager.ins.entities.length - 1; i >= 0; i--) {
+            if (MapManager.ins.entities[i].AABB.isDotInside(pos.x, pos.y))
+                return i;
+        }
+        return -1;
     }
 }
 class Building extends Entity {

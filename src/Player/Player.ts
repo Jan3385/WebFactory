@@ -59,7 +59,7 @@ class Player{
         this.camera.UpdateCamera();
 
         //update mouse indicator
-        InputManager.ins.UpdateMouseIndicator();
+        //InputManager.ins.UpdateMouseIndicator();
     }
     setPosition(pos: Vector2){
         this.position = pos;
