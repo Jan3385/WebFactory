@@ -976,8 +976,6 @@ class Entity {
         this.texture = new Image(this.AABB.width * Chunk.PixelSize, this.AABB.height * Chunk.PixelSize);
         this.texture.src = "Images/Entities/" + texture + ".png";
     }
-    OnClick() { }
-    ;
     /*
     * offsets by half a block
     */
@@ -1011,7 +1009,7 @@ class Building extends Entity {
     }
     Draw(cameraOffset) {
         if (this.texture == null) {
-            console.error("Entity texture is null");
+            console.error(`Entity at ${this.position.x}x ${this.position.y}y: texture is null`);
             return;
         }
         ;
