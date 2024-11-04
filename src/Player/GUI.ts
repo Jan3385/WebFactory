@@ -104,6 +104,11 @@ class GUI{
         this.AddInteractiveElement(button);
         return this;
     }
+    AddSlot(AABB: AABB, Item: SlotItem | null = null): GUI{
+        const slot = new GUISlot(AABB, Item);
+        this.AddInteractiveElement(slot);
+        return this;
+    }
     AddTopBar(Header: string){
         this.AddSimple(new AABB(new Vector2(0, -30), new Vector2(this.AABB.width, 25)), new rgba(255, 255, 255, 0.5));
         this.AddText(new AABB(new Vector2(10, -10), new Vector2(100, 20)), Header, 20);
@@ -165,7 +170,13 @@ class GUIImage extends GUIElement{
         RenderManager.ctx.drawImage(this.img, this.AABB.x*scale, this.AABB.y*scale, this.AABB.width*scale, this.AABB.height*scale);
     }
 }
-abstract class GUIInteractable extends GUIElement{
+interface IInteract{
+    OnClick(): void;
+}
+function IsInteractable(element: GUIElement): element is GUIInteractable{
+    return (element as GUIInteractable).OnClick !== undefined;
+}
+abstract class GUIInteractable extends GUIElement implements IInteract{
     public onClick: Function;
     constructor(AABB: AABB, onClick: Function){
         super();
@@ -201,5 +212,37 @@ class GUIImageButton extends GUIInteractable{
     }
     Draw(scale: number, offset: Vector2): void{
         RenderManager.ctx.drawImage(this.img, this.AABB.x*scale+offset.x, this.AABB.y*scale+offset.y, this.AABB.width*scale, this.AABB.height*scale);
+    }
+}
+class GUISlot extends GUIElement implements IInteract{
+    public itemInSlot: SlotItem | null = null;
+
+    constructor(AABB: AABB, itemInSlot: SlotItem | null = null){
+        super();
+        this.AABB = AABB;
+        this.itemInSlot = itemInSlot;
+    }
+    Draw(scale: number, offset: Vector2): void {
+        //draw slot
+        RenderManager.ctx.fillStyle = "red";
+        RenderManager.ctx.fillRect(
+            this.AABB.x*scale+offset.x, 
+            this.AABB.y*scale+offset.y, 
+            this.AABB.width*scale, 
+            this.AABB.height*scale);
+
+        //draw item if not null
+        if(this.itemInSlot){
+            RenderManager.ctx.drawImage(
+                this.itemInSlot.item.image,  
+                this.AABB.x*scale+offset.x,
+                this.AABB.y*scale+offset.y, 
+                this.AABB.width*scale,
+                this.AABB.height*scale);
+        }
+    }
+    OnClick(){
+        console.log("Slot clicked");
+        this.itemInSlot = null;
     }
 }

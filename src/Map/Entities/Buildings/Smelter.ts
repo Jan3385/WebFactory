@@ -11,7 +11,8 @@ class Smelter extends Building {
     public override OpenGUI(): GUI {
         const gui = new GUI(800, 400)
             .AddTopBar("Smelter!")
-            .AddText(new AABB(new Vector2(22, 20), new Vector2(200, 10)), "Smelter", 20);
+            .AddText(new AABB(new Vector2(22, 20), new Vector2(200, 10)), "Smelter", 20)
+            .AddSlot(new AABB(new Vector2(40, 40), new Vector2(100, 100)), new SlotItem(0, GetItem(ItemType.CopperOre), 1));
 
         return gui;
     }

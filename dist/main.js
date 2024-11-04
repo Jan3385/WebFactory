@@ -621,6 +621,11 @@ class GUI {
         this.AddInteractiveElement(button);
         return this;
     }
+    AddSlot(AABB, Item = null) {
+        const slot = new GUISlot(AABB, Item);
+        this.AddInteractiveElement(slot);
+        return this;
+    }
     AddTopBar(Header) {
         this.AddSimple(new AABB(new Vector2(0, -30), new Vector2(this.AABB.width, 25)), new rgba(255, 255, 255, 0.5));
         this.AddText(new AABB(new Vector2(10, -10), new Vector2(100, 20)), Header, 20);
@@ -678,6 +683,9 @@ class GUIImage extends GUIElement {
         RenderManager.ctx.drawImage(this.img, this.AABB.x * scale, this.AABB.y * scale, this.AABB.width * scale, this.AABB.height * scale);
     }
 }
+function IsInteractable(element) {
+    return element.OnClick !== undefined;
+}
 class GUIInteractable extends GUIElement {
     onClick;
     constructor(AABB, onClick) {
@@ -716,6 +724,27 @@ class GUIImageButton extends GUIInteractable {
         RenderManager.ctx.drawImage(this.img, this.AABB.x * scale + offset.x, this.AABB.y * scale + offset.y, this.AABB.width * scale, this.AABB.height * scale);
     }
 }
+class GUISlot extends GUIElement {
+    itemInSlot = null;
+    constructor(AABB, itemInSlot = null) {
+        super();
+        this.AABB = AABB;
+        this.itemInSlot = itemInSlot;
+    }
+    Draw(scale, offset) {
+        //draw slot
+        RenderManager.ctx.fillStyle = "red";
+        RenderManager.ctx.fillRect(this.AABB.x * scale + offset.x, this.AABB.y * scale + offset.y, this.AABB.width * scale, this.AABB.height * scale);
+        //draw item if not null
+        if (this.itemInSlot) {
+            RenderManager.ctx.drawImage(this.itemInSlot.item.image, this.AABB.x * scale + offset.x, this.AABB.y * scale + offset.y, this.AABB.width * scale, this.AABB.height * scale);
+        }
+    }
+    OnClick() {
+        console.log("Slot clicked");
+        this.itemInSlot = null;
+    }
+}
 /// <reference path="./Math/Math.ts" />
 /// <reference path="./Map/MapManager.ts" />
 /// <reference path="./Player/Player.ts" />
@@ -732,8 +761,6 @@ class RenderManager {
         window.addEventListener('resize', this.OnWindowResize);
         this.OnWindowResize();
         this.IndicatorImg.src = "images/indicators/MouseIndicator.png";
-        //TODO: temp
-        //const gui = new GUI(200, 200);
     }
     PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
     PreviousCameraAABB = Player.ins.camera.AABB.copy();
@@ -960,7 +987,7 @@ class InputManager {
         RenderManager.ins.ActiveGUIs.forEach(gui => {
             gui.interactiveElements.forEach(element => {
                 if (element.GetOnScreenAABB(GUIScale).isDotInside(mousePos.x, mousePos.y)) {
-                    if (element instanceof GUIInteractable)
+                    if (IsInteractable(element))
                         element.OnClick();
                     return;
                 }
@@ -1071,7 +1098,8 @@ class Smelter extends Building {
     OpenGUI() {
         const gui = new GUI(800, 400)
             .AddTopBar("Smelter!")
-            .AddText(new AABB(new Vector2(22, 20), new Vector2(200, 10)), "Smelter", 20);
+            .AddText(new AABB(new Vector2(22, 20), new Vector2(200, 10)), "Smelter", 20)
+            .AddSlot(new AABB(new Vector2(40, 40), new Vector2(100, 100)), new SlotItem(0, GetItem(ItemType.CopperOre), 1));
         return gui;
     }
 }
@@ -1180,3 +1208,13 @@ async function Main() {
     }
 }
 Main();
+class SlotItem {
+    slot;
+    item;
+    amount;
+    constructor(slot, item, amount) {
+        this.slot = slot;
+        this.item = item;
+        this.amount = amount;
+    }
+}

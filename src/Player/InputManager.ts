@@ -163,7 +163,7 @@ class InputManager{
         RenderManager.ins.ActiveGUIs.forEach(gui => {
             gui.interactiveElements.forEach(element => {
                 if(element.GetOnScreenAABB(GUIScale).isDotInside(mousePos.x, mousePos.y)) {
-                    if(element instanceof GUIInteractable) element.OnClick();
+                    if(IsInteractable(element)) element.OnClick();
                     return;
                 }
             });

@@ -19,9 +19,6 @@ class RenderManager{
         this.OnWindowResize();
 
         this.IndicatorImg.src = "images/indicators/MouseIndicator.png";
-
-        //TODO: temp
-        //const gui = new GUI(200, 200);
     }
 
     private PreviousCameraOffset: Vector2 = Player.ins.camera.GetCameraOffset();
