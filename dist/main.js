@@ -601,8 +601,8 @@ class GUI {
         this.AddElement(element);
         this.interactiveElements.push(element);
     }
-    AddText(AABB, text, textSize) {
-        const element = new GUIText(AABB, text, textSize);
+    AddText(AABB, text, textSize, textAlign = "left") {
+        const element = new GUIText(AABB, text, textSize, textAlign);
         this.AddElement(element);
         return this;
     }
@@ -660,14 +660,17 @@ class GUISimple extends GUIElement {
 class GUIText extends GUIElement {
     text;
     textSize;
-    constructor(AABB, text, textSize = 20) {
+    textAlign;
+    constructor(AABB, text, textSize = 20, textAlign = "left") {
         super();
         this.AABB = AABB;
         this.text = text;
         this.textSize = textSize;
+        this.textAlign = textAlign;
     }
     Draw(scale, offset) {
         RenderManager.ctx.fillStyle = "white";
+        RenderManager.ctx.textAlign = this.textAlign;
         RenderManager.ctx.font = `${this.textSize * scale}px Tiny5`;
         RenderManager.ctx.fillText(this.text, this.AABB.x * scale + offset.x, this.AABB.y * scale + offset.y);
     }
@@ -726,23 +729,27 @@ class GUIImageButton extends GUIInteractable {
 }
 class GUISlot extends GUIElement {
     itemInSlot = null;
+    static InventoryItemOffset = 4;
+    static InventorySlotImage;
     constructor(AABB, itemInSlot = null) {
         super();
         this.AABB = AABB;
         this.itemInSlot = itemInSlot;
+        if (!GUISlot.InventorySlotImage) {
+            GUISlot.InventorySlotImage = new Image();
+            GUISlot.InventorySlotImage.src = "Images/GUI/ItemSlot.png";
+        }
     }
     Draw(scale, offset) {
         //draw slot
-        RenderManager.ctx.fillStyle = "red";
-        RenderManager.ctx.fillRect(this.AABB.x * scale + offset.x, this.AABB.y * scale + offset.y, this.AABB.width * scale, this.AABB.height * scale);
+        RenderManager.ctx.drawImage(GUISlot.InventorySlotImage, this.AABB.x * scale + offset.x, this.AABB.y * scale + offset.y, this.AABB.width * scale, this.AABB.height * scale);
         //draw item if not null
         if (this.itemInSlot) {
-            RenderManager.ctx.drawImage(this.itemInSlot.item.image, this.AABB.x * scale + offset.x, this.AABB.y * scale + offset.y, this.AABB.width * scale, this.AABB.height * scale);
+            RenderManager.ctx.drawImage(this.itemInSlot.item.image, this.AABB.x * scale + offset.x + GUISlot.InventoryItemOffset / 2, this.AABB.y * scale + offset.y + GUISlot.InventoryItemOffset / 2, this.AABB.width * scale - GUISlot.InventoryItemOffset, this.AABB.height * scale - GUISlot.InventoryItemOffset);
         }
     }
     OnClick() {
-        console.log("Slot clicked");
-        this.itemInSlot = null;
+        this.itemInSlot.item = GetItem(ItemType.IronIngot);
     }
 }
 /// <reference path="./Math/Math.ts" />
@@ -1013,6 +1020,24 @@ class InputManager {
         Chunk.PixelSize = clamp(Chunk.PixelSize + WheelDir, 6, 30);
     }
 }
+class InventoryItem {
+    slot;
+    item;
+    amount;
+    constructor(slot, item, amount) {
+        this.slot = slot;
+        this.item = item;
+        this.amount = amount;
+    }
+}
+class Inventory {
+    items = [];
+    maxItems;
+    constructor(maxItems) {
+        this.maxItems = maxItems;
+    }
+}
+/// <reference path="../../Player/Inventory.ts" />
 class Entity {
     AABB;
     position;
@@ -1085,9 +1110,16 @@ class Building extends Entity {
         RenderManager.ctx.drawImage(this.texture, this.position.x * Chunk.PixelSize + cameraOffset.x, this.position.y * Chunk.PixelSize + cameraOffset.y, this.AABB.width * Chunk.PixelSize, this.AABB.height * Chunk.PixelSize);
     }
 }
-class Smelter extends Building {
+class InventoryBuilding extends Building {
+}
+class Smelter extends InventoryBuilding {
+    Inventory;
     constructor(position, size) {
         super(position, size);
+        this.Inventory = new Inventory(20);
+        //TODO: temp
+        this.Inventory.items.push(new InventoryItem(0, GetItem(ItemType.CopperOre), 1));
+        this.Inventory.items.push(new InventoryItem(1, GetItem(ItemType.IronPlate), 3));
     }
     Act(deltaTime) {
         throw new Error("Method not implemented.");
@@ -1098,9 +1130,22 @@ class Smelter extends Building {
     OpenGUI() {
         const gui = new GUI(800, 400)
             .AddTopBar("Smelter!")
-            .AddText(new AABB(new Vector2(22, 20), new Vector2(200, 10)), "Smelter", 20)
-            .AddSlot(new AABB(new Vector2(40, 40), new Vector2(100, 100)), new SlotItem(0, GetItem(ItemType.CopperOre), 1));
+            .AddText(new AABB(new Vector2(400, 60), new Vector2(200, 10)), "Smelter", 40, "center")
+            .AddSlot(new AABB(new Vector2(80, 150), new Vector2(100, 100)), this.Inventory.items[0])
+            .AddSlot(new AABB(new Vector2(620, 150), new Vector2(100, 100)), this.Inventory.items[1]);
         return gui;
+    }
+    GetOutputItems() {
+        throw new Error("Method not implemented.");
+    }
+    GetInputItems() {
+        throw new Error("Method not implemented.");
+    }
+    GetWantedItems() {
+        throw new Error("Method not implemented.");
+    }
+    AddInputItem(item) {
+        throw new Error("Method not implemented.");
     }
 }
 class EntityItem extends Entity {
@@ -1208,13 +1253,3 @@ async function Main() {
     }
 }
 Main();
-class SlotItem {
-    slot;
-    item;
-    amount;
-    constructor(slot, item, amount) {
-        this.slot = slot;
-        this.item = item;
-        this.amount = amount;
-    }
-}

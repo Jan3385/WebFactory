@@ -1,4 +1,4 @@
-class SlotItem{
+class InventoryItem{
     public slot: number;
     public item: Item
     public amount: number;
@@ -7,4 +7,12 @@ class SlotItem{
         this.item = item;
         this.amount = amount;
     }
+}
+class Inventory{
+    public items: InventoryItem[] = [];
+    public maxItems: number;
+    constructor(maxItems: number){
+        this.maxItems = maxItems;
+    }
+    
 }

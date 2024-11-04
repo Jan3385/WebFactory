@@ -1,3 +1,5 @@
+/// <reference path="../../Player/Inventory.ts" />
+
 abstract class Entity{
     public AABB: AABB;
     public position: Vector2;
@@ -81,4 +83,12 @@ abstract class Building extends Entity{
 
     public abstract Act(deltaTime: number): void;
     public abstract OpenGUI(): GUI;
+}
+abstract class InventoryBuilding extends Building{
+    public abstract Inventory: Inventory;
+
+    public abstract GetOutputItems(): InventoryItem[];
+    public abstract GetInputItems(): InventoryItem[];
+    public abstract GetWantedItems(): [Item, number][];
+    public abstract AddInputItem(item: InventoryItem): boolean;
 }

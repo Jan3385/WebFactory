@@ -84,8 +84,8 @@ class GUI{
         this.AddElement(element);
         this.interactiveElements.push(element);
     }
-    AddText(AABB: AABB, text: string, textSize: number): GUI{
-        const element = new GUIText(AABB, text, textSize);
+    AddText(AABB: AABB, text: string, textSize: number, textAlign: CanvasTextAlign = "left"): GUI{
+        const element = new GUIText(AABB, text, textSize, textAlign);
         this.AddElement(element);
         return this;
     }
@@ -104,7 +104,7 @@ class GUI{
         this.AddInteractiveElement(button);
         return this;
     }
-    AddSlot(AABB: AABB, Item: SlotItem | null = null): GUI{
+    AddSlot(AABB: AABB, Item: InventoryItem | null = null): GUI{
         const slot = new GUISlot(AABB, Item);
         this.AddInteractiveElement(slot);
         return this;
@@ -147,14 +147,17 @@ class GUISimple extends GUIElement{
 class GUIText extends GUIElement{
     public text: string;
     public textSize: number;
-    constructor(AABB: AABB, text: string, textSize: number = 20){
+    public textAlign: CanvasTextAlign;
+    constructor(AABB: AABB, text: string, textSize: number = 20, textAlign: CanvasTextAlign = "left"){
         super();
         this.AABB = AABB;
         this.text = text;
         this.textSize = textSize;
+        this.textAlign = textAlign;
     }
     Draw(scale: number, offset: Vector2){
         RenderManager.ctx.fillStyle = "white";
+        RenderManager.ctx.textAlign = this.textAlign;
         RenderManager.ctx.font = `${this.textSize*scale}px Tiny5`;
         RenderManager.ctx.fillText(this.text, this.AABB.x*scale+offset.x, this.AABB.y*scale+offset.y);
     }
@@ -215,34 +218,38 @@ class GUIImageButton extends GUIInteractable{
     }
 }
 class GUISlot extends GUIElement implements IInteract{
-    public itemInSlot: SlotItem | null = null;
-
-    constructor(AABB: AABB, itemInSlot: SlotItem | null = null){
+    public itemInSlot: InventoryItem | null = null;
+    private static InventoryItemOffset: number = 4;
+    private static InventorySlotImage: HTMLImageElement;
+    constructor(AABB: AABB, itemInSlot: InventoryItem | null = null){
         super();
         this.AABB = AABB;
         this.itemInSlot = itemInSlot;
+        if(!GUISlot.InventorySlotImage){
+            GUISlot.InventorySlotImage = new Image();
+            GUISlot.InventorySlotImage.src = "Images/GUI/ItemSlot.png";
+        }
     }
     Draw(scale: number, offset: Vector2): void {
         //draw slot
-        RenderManager.ctx.fillStyle = "red";
-        RenderManager.ctx.fillRect(
-            this.AABB.x*scale+offset.x, 
+        RenderManager.ctx.drawImage(
+            GUISlot.InventorySlotImage,  
+            this.AABB.x*scale+offset.x,
             this.AABB.y*scale+offset.y, 
-            this.AABB.width*scale, 
+            this.AABB.width*scale,
             this.AABB.height*scale);
 
         //draw item if not null
         if(this.itemInSlot){
             RenderManager.ctx.drawImage(
                 this.itemInSlot.item.image,  
-                this.AABB.x*scale+offset.x,
-                this.AABB.y*scale+offset.y, 
-                this.AABB.width*scale,
-                this.AABB.height*scale);
+                this.AABB.x*scale+offset.x + GUISlot.InventoryItemOffset/2,
+                this.AABB.y*scale+offset.y + GUISlot.InventoryItemOffset/2, 
+                this.AABB.width*scale - GUISlot.InventoryItemOffset,
+                this.AABB.height*scale - GUISlot.InventoryItemOffset);
         }
     }
     OnClick(){
-        console.log("Slot clicked");
-        this.itemInSlot = null;
+        this.itemInSlot!.item = GetItem(ItemType.IronIngot);
     }
 }
