@@ -1,6 +1,6 @@
 /// <reference path="./Player/Player.ts" />
 /// <reference path="./Player/InputManager.ts" />
-/// <reference path="./Map/Entities/Enity.ts" />
+/// <reference path="./Map/Entities/Entity.ts" />
 /// <reference path="./Map/Entities/Buildings/Smelter.ts" />
 /// <reference path="./Map/Items/Item.ts" />
 

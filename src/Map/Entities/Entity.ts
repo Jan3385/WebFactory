@@ -89,6 +89,6 @@ abstract class InventoryBuilding extends Building{
 
     public abstract GetOutputItems(): InventoryItem[];
     public abstract GetInputItems(): InventoryItem[];
-    public abstract GetWantedItems(): [Item, number][];
+    public abstract GetWantedItems(): ItemGroup;
     public abstract AddInputItem(item: InventoryItem): boolean;
 }

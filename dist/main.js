@@ -1021,13 +1021,31 @@ class InputManager {
     }
 }
 class InventoryItem {
-    slot;
     item;
     amount;
-    constructor(slot, item, amount) {
-        this.slot = slot;
+    constructor(item, amount) {
         this.item = item;
         this.amount = amount;
+    }
+}
+var ItemTag;
+(function (ItemTag) {
+    ItemTag[ItemTag["None"] = 0] = "None";
+    ItemTag[ItemTag["Ingot"] = 1] = "Ingot";
+    ItemTag[ItemTag["Ore"] = 2] = "Ore";
+    ItemTag[ItemTag["Fuel"] = 4] = "Fuel";
+})(ItemTag || (ItemTag = {}));
+class ItemGroup {
+    items = [];
+    itemTag = ItemTag.None;
+    includes(item) {
+        if (this.items.includes(item))
+            return true;
+        if (this.itemTag == ItemTag.None)
+            return false;
+        if ((item.tag & this.itemTag) != 0)
+            return true;
+        return false;
     }
 }
 class Inventory {
@@ -1117,12 +1135,10 @@ class Smelter extends InventoryBuilding {
     constructor(position, size) {
         super(position, size);
         this.Inventory = new Inventory(20);
-        //TODO: temp
-        this.Inventory.items.push(new InventoryItem(0, GetItem(ItemType.CopperOre), 1));
-        this.Inventory.items.push(new InventoryItem(1, GetItem(ItemType.IronPlate), 3));
+        this.Inventory.items.push(new InventoryItem(GetItem(ItemType.CopperOre), 1));
+        this.Inventory.items.push(new InventoryItem(GetItem(ItemType.IronPlate), 3));
     }
     Act(deltaTime) {
-        throw new Error("Method not implemented.");
     }
     OnClick() {
         this.OpenGUI();
@@ -1178,36 +1194,42 @@ const Items = {
         image: new Image(32, 32),
         description: "A chunk of iron ore",
         weight: 1,
+        tag: ItemTag.Ore,
     },
     [ItemType.IronIngot]: {
         name: "Iron Ingot",
         image: new Image(32, 32),
         description: "A bar of iron",
         weight: 1,
+        tag: ItemTag.Ingot,
     },
     [ItemType.CopperOre]: {
         name: "Copper Ore",
         image: new Image(32, 32),
         description: "A chunk of copper ore",
         weight: 1,
+        tag: ItemTag.Ore,
     },
     [ItemType.CopperIngot]: {
         name: "Copper Ingot",
         image: new Image(32, 32),
         description: "A bar of copper",
         weight: 1,
+        tag: ItemTag.Ingot,
     },
     [ItemType.IronPlate]: {
         name: "Iron Plate",
         image: new Image(32, 32),
         description: "A plate of iron",
         weight: 1,
+        tag: ItemTag.None,
     },
     [ItemType.Coal]: {
         name: "Coal",
         image: new Image(32, 32),
         description: "A chunk of coal",
         weight: 1,
+        tag: ItemTag.Fuel,
     },
 };
 function GetItem(type) {
@@ -1220,7 +1242,7 @@ function LoadItems() {
 }
 /// <reference path="./Player/Player.ts" />
 /// <reference path="./Player/InputManager.ts" />
-/// <reference path="./Map/Entities/Enity.ts" />
+/// <reference path="./Map/Entities/Entity.ts" />
 /// <reference path="./Map/Entities/Buildings/Smelter.ts" />
 /// <reference path="./Map/Items/Item.ts" />
 const fps = 50;

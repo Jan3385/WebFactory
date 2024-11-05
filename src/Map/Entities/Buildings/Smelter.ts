@@ -4,12 +4,11 @@ class Smelter extends InventoryBuilding {
         super(position, size);
         this.Inventory = new Inventory(20);
 
-        //TODO: temp
-        this.Inventory.items.push(new InventoryItem(0, GetItem(ItemType.CopperOre), 1));
-        this.Inventory.items.push(new InventoryItem(1, GetItem(ItemType.IronPlate), 3));
+        this.Inventory.items.push(new InventoryItem(GetItem(ItemType.CopperOre), 1));
+        this.Inventory.items.push(new InventoryItem(GetItem(ItemType.IronPlate), 3));
     }
     public Act(deltaTime: number): void {
-        throw new Error("Method not implemented.");
+        
     }
     override OnClick(): void {
         this.OpenGUI();
@@ -28,7 +27,7 @@ class Smelter extends InventoryBuilding {
     public override GetInputItems(): InventoryItem[] {
         throw new Error("Method not implemented.");
     }
-    public override GetWantedItems(): [Item, number][] {
+    public override GetWantedItems(): ItemGroup {
         throw new Error("Method not implemented.");
     }
     public override AddInputItem(item: InventoryItem): boolean {
