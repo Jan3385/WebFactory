@@ -49,19 +49,14 @@ class Chunk{
     DrawChunkExtras(CameraOffset: Vector2){
         CameraOffset = CameraOffset.add(this.position.multiply(Chunk.ChunkSize*Chunk.PixelSize));
         //write chunk number on the chunk
+        RenderManager.ctx.textAlign = "left";
         RenderManager.ctx.fillStyle = "white";
         RenderManager.ctx.font = "10px Arial";
         RenderManager.ctx.fillText(`(${this.position.x}, ${this.position.y})`, CameraOffset.x, CameraOffset.y+Chunk.ChunkSize*Chunk.PixelSize-5);
 
-        //box at the 0,0 of the chunk
-        RenderManager.ctx.fillStyle = "red";
-        RenderManager.ctx.fillRect(CameraOffset.x, CameraOffset.y, 5, 5);
-
-
         //draw chunk border
-        if(this.position.x != 2 || this.position.y != 1) return;
         RenderManager.ctx.strokeStyle = "Blue";
-        RenderManager.ctx.lineWidth = 5;
+        RenderManager.ctx.lineWidth = 1;
         RenderManager.ctx.strokeRect(CameraOffset.x+1, CameraOffset.y+1, this.GetAABB().width*Chunk.PixelSize - 1, this.GetAABB().height*Chunk.PixelSize - 1);
     }
     GetAABB(): AABB{

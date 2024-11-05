@@ -14,6 +14,7 @@ class EntityItem extends Entity {
             this.AABB.height * Chunk.PixelSize);
     }
     OnClick(): void{
+        Player.ins.PlayerInventory.AddItem(new InventoryItem(this.item, 1, 0));
         this.destroy();
     }
 }

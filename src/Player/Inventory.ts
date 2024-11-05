@@ -1,9 +1,24 @@
 class InventoryItem{
-    public item: Item
+    public item: Item|null;
     public amount: number;
-    constructor(item: Item, amount: number) {
+    public slot: number;
+    constructor(item: Item|null, amount: number, slot: number){
         this.item = item;
         this.amount = amount;
+        this.slot = slot;
+    }
+    public static CreateEmpty(slot: number): InventoryItem{
+        return new InventoryItem(null, 0, slot);
+    }
+    public static Swap(a: InventoryItem, b: InventoryItem){
+        let temp = a.item;
+        let temp2 = a.amount;
+
+        a.item = b.item;
+        a.amount = b.amount;
+
+        b.item = temp;
+        b.amount = temp2;
     }
 }
 enum ItemTag{
@@ -23,10 +38,39 @@ class ItemGroup{
     }
 }
 class Inventory{
-    public items: InventoryItem[] = [];
+    public items: InventoryItem[];
     public maxItems: number;
     constructor(maxItems: number){
         this.maxItems = maxItems;
+
+        this.items = new Array<InventoryItem>(maxItems);
+
+        for(let i = 0; i < this.items.length; i++){
+            this.items[i] = InventoryItem.CreateEmpty(i);
+        }
     }
-    
+    AddItem(item: InventoryItem): boolean{
+        let FoundItem = false;
+        this.items.every(iItem => {
+            if(iItem.item == item.item){
+                iItem.amount += item.amount;
+                FoundItem = true;
+                return false;
+            }
+            return true;
+        });
+        if(FoundItem) return true;
+
+        for(let i = 0; i < this.items.length; i++){
+            if(this.items[i].item == null){
+                this.items[i].item = item.item;
+                this.items[i].amount = item.amount;
+                return true;
+            }
+        }
+
+        if(this.items.length >= this.maxItems) return false;
+        this.items.push(item);
+        return true;
+    }
 }

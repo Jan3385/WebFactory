@@ -13,7 +13,9 @@ async function Main() {
 
     Player.ins.move(new Vector2(0, 0)); //updates chunks and moves player
     new RenderManager();
+    Player.ins.GetPlayerGUI(); //Generates player GUI
 
+    //temp
     const a = new Smelter(new Vector2(1, 1), new Vector2(1, 1));
     a.SetTexture("SigmaMachine");
     const b = new Smelter(new Vector2(3, 2), new Vector2(1, 1));

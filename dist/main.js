@@ -376,17 +376,13 @@ class Chunk {
     DrawChunkExtras(CameraOffset) {
         CameraOffset = CameraOffset.add(this.position.multiply(Chunk.ChunkSize * Chunk.PixelSize));
         //write chunk number on the chunk
+        RenderManager.ctx.textAlign = "left";
         RenderManager.ctx.fillStyle = "white";
         RenderManager.ctx.font = "10px Arial";
         RenderManager.ctx.fillText(`(${this.position.x}, ${this.position.y})`, CameraOffset.x, CameraOffset.y + Chunk.ChunkSize * Chunk.PixelSize - 5);
-        //box at the 0,0 of the chunk
-        RenderManager.ctx.fillStyle = "red";
-        RenderManager.ctx.fillRect(CameraOffset.x, CameraOffset.y, 5, 5);
         //draw chunk border
-        if (this.position.x != 2 || this.position.y != 1)
-            return;
         RenderManager.ctx.strokeStyle = "Blue";
-        RenderManager.ctx.lineWidth = 5;
+        RenderManager.ctx.lineWidth = 1;
         RenderManager.ctx.strokeRect(CameraOffset.x + 1, CameraOffset.y + 1, this.GetAABB().width * Chunk.PixelSize - 1, this.GetAABB().height * Chunk.PixelSize - 1);
     }
     GetAABB() {
@@ -479,7 +475,84 @@ class AABB {
         return new AABB(new Vector2(this.x, this.y), new Vector2(this.width, this.height));
     }
 }
+class InventoryItem {
+    item;
+    amount;
+    slot;
+    constructor(item, amount, slot) {
+        this.item = item;
+        this.amount = amount;
+        this.slot = slot;
+    }
+    static CreateEmpty(slot) {
+        return new InventoryItem(null, 0, slot);
+    }
+    static Swap(a, b) {
+        let temp = a.item;
+        let temp2 = a.amount;
+        a.item = b.item;
+        a.amount = b.amount;
+        b.item = temp;
+        b.amount = temp2;
+    }
+}
+var ItemTag;
+(function (ItemTag) {
+    ItemTag[ItemTag["None"] = 0] = "None";
+    ItemTag[ItemTag["Ingot"] = 1] = "Ingot";
+    ItemTag[ItemTag["Ore"] = 2] = "Ore";
+    ItemTag[ItemTag["Fuel"] = 4] = "Fuel";
+})(ItemTag || (ItemTag = {}));
+class ItemGroup {
+    items = [];
+    itemTag = ItemTag.None;
+    includes(item) {
+        if (this.items.includes(item))
+            return true;
+        if (this.itemTag == ItemTag.None)
+            return false;
+        if ((item.tag & this.itemTag) != 0)
+            return true;
+        return false;
+    }
+}
+class Inventory {
+    items;
+    maxItems;
+    constructor(maxItems) {
+        this.maxItems = maxItems;
+        this.items = new Array(maxItems);
+        for (let i = 0; i < this.items.length; i++) {
+            this.items[i] = InventoryItem.CreateEmpty(i);
+        }
+    }
+    AddItem(item) {
+        let FoundItem = false;
+        this.items.every(iItem => {
+            if (iItem.item == item.item) {
+                iItem.amount += item.amount;
+                FoundItem = true;
+                return false;
+            }
+            return true;
+        });
+        if (FoundItem)
+            return true;
+        for (let i = 0; i < this.items.length; i++) {
+            if (this.items[i].item == null) {
+                this.items[i].item = item.item;
+                this.items[i].amount = item.amount;
+                return true;
+            }
+        }
+        if (this.items.length >= this.maxItems)
+            return false;
+        this.items.push(item);
+        return true;
+    }
+}
 /// <reference path="../Math/AABB.ts" />
+/// <reference path="../Player/Inventory.ts" />
 class Camera {
     //Camera position in screen-space-position
     position;
@@ -509,6 +582,8 @@ class Player {
     position = new Vector2(0, -(0)); //2**16 default
     Speed = 0.4;
     camera = new Camera(this.position.multiply(Chunk.PixelSize));
+    HandInventory = new Inventory(1);
+    PlayerInventory = new Inventory(12);
     constructor() { }
     move(dir) {
         this.position = this.position.add(dir.multiply(this.Speed));
@@ -524,24 +599,101 @@ class Player {
         RenderManager.ctx.fillStyle = 'red';
         RenderManager.ctx.fillRect(this.position.x * Chunk.PixelSize + CameraOffset.x, this.position.y * Chunk.PixelSize + CameraOffset.y, Chunk.PixelSize, Chunk.PixelSize);
     }
+    GetPlayerGUI() {
+        //change how slots are added
+        const gui = new BottomClampGUI(window.innerWidth, window.innerHeight)
+            .AddSimple(new AABB(new Vector2(0, -100), new Vector2(window.innerWidth, 100)), new rgba(99, 110, 114, 0.5))
+            .AddSlot(new AABB(new Vector2(10, -90), new Vector2(80, 80)), this.PlayerInventory.items[0])
+            .AddSlot(new AABB(new Vector2(100, -90), new Vector2(80, 80)), this.PlayerInventory.items[1])
+            .AddSlot(new AABB(new Vector2(190, -90), new Vector2(80, 80)), this.PlayerInventory.items[2])
+            .AddSlot(new AABB(new Vector2(280, -90), new Vector2(80, 80)), this.PlayerInventory.items[3])
+            .AddSlot(new AABB(new Vector2(370, -90), new Vector2(80, 80)), this.PlayerInventory.items[4])
+            .AddSlot(new AABB(new Vector2(460, -90), new Vector2(80, 80)), this.PlayerInventory.items[5])
+            .AddSlot(new AABB(new Vector2(550, -90), new Vector2(80, 80)), this.PlayerInventory.items[6])
+            .AddSlot(new AABB(new Vector2(640, -90), new Vector2(80, 80)), this.PlayerInventory.items[7])
+            .AddSlot(new AABB(new Vector2(730, -90), new Vector2(80, 80)), this.PlayerInventory.items[8])
+            .AddSlot(new AABB(new Vector2(820, -90), new Vector2(80, 80)), this.PlayerInventory.items[9])
+            .AddSlot(new AABB(new Vector2(910, -90), new Vector2(80, 80)), this.PlayerInventory.items[10])
+            .AddSlot(new AABB(new Vector2(1000, -90), new Vector2(80, 80)), this.PlayerInventory.items[11]);
+        return gui;
+    }
 }
 class GUI {
     elements;
     interactiveElements;
     AABB;
-    BackgroundImage;
     constructor(width, height) {
         this.elements = [];
         this.interactiveElements = [];
         this.AABB = new AABB(new Vector2(0, 0), new Vector2(width, height));
-        this.BackgroundImage = new Image();
-        this.SetBackground("Default");
-        this.MoveToMiddleOfScreen();
         RenderManager.ins.AddGUI(this);
     }
     MoveToMiddleOfScreen() {
         this.AABB.x = 1920 / 2 - this.AABB.width / 2;
         this.AABB.y = 1080 / 2 - this.AABB.height / 2;
+    }
+    Draw(scale) {
+        this.elements.forEach(guiElement => guiElement.Draw(scale, new Vector2(this.AABB.x * scale, this.AABB.y * scale)));
+    }
+    Close() {
+        RenderManager.ins.RemoveGUI(this);
+    }
+    AddSimple(AABB, color) {
+        this.AddElement(new GUISimple(AABB, color));
+        return this;
+    }
+    AddElement(element) {
+        element.parent = this;
+        this.elements.push(element);
+    }
+    AddInteractiveElement(element) {
+        this.AddElement(element);
+        this.interactiveElements.push(element);
+    }
+    AddText(AABB, text, textSize, textAlign = "left") {
+        const element = new GUIText(AABB, text, textSize, textAlign);
+        this.AddElement(element);
+        return this;
+    }
+    AddImage(AABB, img) {
+        const element = new GUIImage(AABB, img);
+        this.AddElement(element);
+        return this;
+    }
+    AddButton(AABB, text, onClick) {
+        const button = new GUIButton(AABB, text, onClick);
+        this.AddInteractiveElement(button);
+        return this;
+    }
+    AddImageButton(AABB, img, onClick) {
+        const button = new GUIImageButton(AABB, img, onClick);
+        this.AddInteractiveElement(button);
+        return this;
+    }
+    AddSlot(AABB, Item) {
+        const slot = new GUISlot(AABB, Item);
+        this.AddInteractiveElement(slot);
+        return this;
+    }
+    AddTopBar(Header) {
+        this.AddSimple(new AABB(new Vector2(0, -30), new Vector2(this.AABB.width, 25)), new rgba(255, 255, 255, 0.5));
+        this.AddText(new AABB(new Vector2(10, -10), new Vector2(100, 20)), Header, 20);
+        const closeButtonImage = new Image();
+        closeButtonImage.src = "Images/GUI/x.png";
+        this.AddImageButton(new AABB(new Vector2(this.AABB.width - 25, -27.5), new Vector2(20, 20)), closeButtonImage, () => this.Close());
+        return this;
+    }
+    static GetGUIScale() {
+        return Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    }
+}
+class BuildingGUI extends GUI {
+    BackgroundImage;
+    constructor(width, height) {
+        super(width, height);
+        this.BackgroundImage = new Image();
+        this.SetBackground("Default");
+        this.MoveToMiddleOfScreen();
     }
     Draw(scale) {
         //draw background
@@ -581,61 +733,31 @@ class GUI {
         //center
         RenderManager.ctx.drawImage(this.BackgroundImage, left, top, right - left, bottom - top, destLeft + scaledBorder, destTop + scaledBorder, (width - 2 * border) * pixelScale, (height - 2 * border) * pixelScale);
     }
-    Close() {
-        RenderManager.ins.RemoveGUI(this);
-    }
     SetBackground(backgroundName) {
         this.BackgroundImage = new Image();
         this.BackgroundImage.src = `Images/GUI/Backgrounds/${backgroundName}.png`;
         return this;
     }
-    AddSimple(AABB, color) {
-        this.AddElement(new GUISimple(AABB, color));
-        return this;
+}
+class BottomClampGUI extends GUI {
+    constructor(width, height) {
+        super(width, height);
+        this.MoveToBottomOfScreen();
     }
-    AddElement(element) {
-        element.parent = this;
-        this.elements.push(element);
+    MoveToBottomOfScreen() {
+        this.AABB.y = window.innerHeight;
+        this.AABB.height = window.innerHeight;
+        this.AABB.width = window.innerWidth;
+        this.elements.forEach(element => {
+            //assume that every element with a width at least half of curret width is supposted to fill the screen
+            if (element.AABB.width > window.innerWidth * 0.5) {
+                element.AABB.width = window.innerWidth;
+            }
+        });
     }
-    AddInteractiveElement(element) {
-        this.AddElement(element);
-        this.interactiveElements.push(element);
-    }
-    AddText(AABB, text, textSize, textAlign = "left") {
-        const element = new GUIText(AABB, text, textSize, textAlign);
-        this.AddElement(element);
-        return this;
-    }
-    AddImage(AABB, img) {
-        const element = new GUIImage(AABB, img);
-        this.AddElement(element);
-        return this;
-    }
-    AddButton(AABB, text, onClick) {
-        const button = new GUIButton(AABB, text, onClick);
-        this.AddInteractiveElement(button);
-        return this;
-    }
-    AddImageButton(AABB, img, onClick) {
-        const button = new GUIImageButton(AABB, img, onClick);
-        this.AddInteractiveElement(button);
-        return this;
-    }
-    AddSlot(AABB, Item = null) {
-        const slot = new GUISlot(AABB, Item);
-        this.AddInteractiveElement(slot);
-        return this;
-    }
-    AddTopBar(Header) {
-        this.AddSimple(new AABB(new Vector2(0, -30), new Vector2(this.AABB.width, 25)), new rgba(255, 255, 255, 0.5));
-        this.AddText(new AABB(new Vector2(10, -10), new Vector2(100, 20)), Header, 20);
-        const closeButtonImage = new Image();
-        closeButtonImage.src = "Images/GUI/x.png";
-        this.AddImageButton(new AABB(new Vector2(this.AABB.width - 25, -27.5), new Vector2(20, 20)), closeButtonImage, () => this.Close());
-        return this;
-    }
-    static GetGUIScale() {
-        return Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    Draw(scale) {
+        this.MoveToBottomOfScreen();
+        super.Draw(1);
     }
 }
 class GUIElement {
@@ -728,10 +850,10 @@ class GUIImageButton extends GUIInteractable {
     }
 }
 class GUISlot extends GUIElement {
-    itemInSlot = null;
+    itemInSlot;
     static InventoryItemOffset = 4;
     static InventorySlotImage;
-    constructor(AABB, itemInSlot = null) {
+    constructor(AABB, itemInSlot) {
         super();
         this.AABB = AABB;
         this.itemInSlot = itemInSlot;
@@ -744,8 +866,20 @@ class GUISlot extends GUIElement {
         //draw slot
         RenderManager.ctx.drawImage(GUISlot.InventorySlotImage, this.AABB.x * scale + offset.x, this.AABB.y * scale + offset.y, this.AABB.width * scale, this.AABB.height * scale);
         //draw item if not null
-        if (this.itemInSlot) {
+        if (this.itemInSlot && this.itemInSlot.item) {
             RenderManager.ctx.drawImage(this.itemInSlot.item.image, this.AABB.x * scale + offset.x + GUISlot.InventoryItemOffset / 2, this.AABB.y * scale + offset.y + GUISlot.InventoryItemOffset / 2, this.AABB.width * scale - GUISlot.InventoryItemOffset, this.AABB.height * scale - GUISlot.InventoryItemOffset);
+            //draw amount
+            if (this.itemInSlot.amount > 1) {
+                RenderManager.ctx.strokeStyle = "black";
+                RenderManager.ctx.fillStyle = "white";
+                RenderManager.ctx.textAlign = "right";
+                RenderManager.ctx.font = "20px Tiny5";
+                RenderManager.ctx.lineWidth = 5;
+                //outline
+                RenderManager.ctx.strokeText(this.itemInSlot.amount.toString(), this.AABB.x * scale + offset.x + this.AABB.width * scale - GUISlot.InventoryItemOffset / 2 - 3, this.AABB.y * scale + offset.y + this.AABB.height * scale - GUISlot.InventoryItemOffset / 2 - 6);
+                //fill text
+                RenderManager.ctx.fillText(this.itemInSlot.amount.toString(), this.AABB.x * scale + offset.x + this.AABB.width * scale - GUISlot.InventoryItemOffset / 2 - 3, this.AABB.y * scale + offset.y + this.AABB.height * scale - GUISlot.InventoryItemOffset / 2 - 6);
+            }
         }
     }
     OnClick() {
@@ -836,6 +970,7 @@ function TimeExec(id) {
     }
 }
 /// <reference path="../Math/Math.ts" />
+/// <reference path="../Player/Inventory.ts" />
 class InputManager {
     static ins = new InputManager();
     MovementVector;
@@ -973,6 +1108,19 @@ class InputManager {
     }
     //Mouse
     onMouseDown(event) {
+        /*  Mouse Events
+         * 0 - left click, 1 - middle click, 2 - right click, 3 - back, 4 - forward
+        */
+        switch (event.button) {
+            case 0:
+                InputManager.ins.OnLeftClick(event);
+                break;
+            case 2:
+                InputManager.ins.OnRightClick(event);
+                break;
+        }
+    }
+    OnLeftClick(event) {
         const mousePos = new Vector2(event.clientX, event.clientY);
         const worldPos = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divide(Chunk.PixelSize);
         const voxelPos = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
@@ -990,22 +1138,40 @@ class InputManager {
             }
         });
         //check if any GUI element was clicked
-        const GUIScale = GUI.GetGUIScale();
         RenderManager.ins.ActiveGUIs.forEach(gui => {
-            gui.interactiveElements.forEach(element => {
+            const GUIScale = gui instanceof BottomClampGUI ? 1 : GUI.GetGUIScale();
+            gui.interactiveElements.every(element => {
                 if (element.GetOnScreenAABB(GUIScale).isDotInside(mousePos.x, mousePos.y)) {
-                    if (IsInteractable(element))
+                    if (element instanceof GUISlot) {
+                        if (Player.ins.HandInventory.items[0].item == element.itemInSlot.item) {
+                            element.itemInSlot.amount += Player.ins.HandInventory.items[0].amount;
+                            Player.ins.HandInventory.items[0] = InventoryItem.CreateEmpty(0);
+                        }
+                        else {
+                            InventoryItem.Swap(Player.ins.HandInventory.items[0], element.itemInSlot);
+                        }
+                        //once handeled a collision, exit
+                        return false;
+                    }
+                    else if (IsInteractable(element)) {
                         element.OnClick();
-                    return;
+                        //once handeled a collision, exit
+                        return false;
+                    }
                 }
+                return true;
             });
         });
-        MapManager.ins.buildings.forEach(building => {
+        MapManager.ins.buildings.every(building => {
             if (building.AABB.isDotInside(voxelPos.x + .5, voxelPos.y + .5)) {
                 building.OnClick();
-                return;
+                //once handeled a collision, exit
+                return false;
             }
+            return true;
         });
+    }
+    OnRightClick(event) {
     }
     onMouseUp(event) {
     }
@@ -1018,41 +1184,6 @@ class InputManager {
     onMouseWheel(event) {
         const WheelDir = event.deltaY > 0 ? -1 : 1;
         Chunk.PixelSize = clamp(Chunk.PixelSize + WheelDir, 6, 30);
-    }
-}
-class InventoryItem {
-    item;
-    amount;
-    constructor(item, amount) {
-        this.item = item;
-        this.amount = amount;
-    }
-}
-var ItemTag;
-(function (ItemTag) {
-    ItemTag[ItemTag["None"] = 0] = "None";
-    ItemTag[ItemTag["Ingot"] = 1] = "Ingot";
-    ItemTag[ItemTag["Ore"] = 2] = "Ore";
-    ItemTag[ItemTag["Fuel"] = 4] = "Fuel";
-})(ItemTag || (ItemTag = {}));
-class ItemGroup {
-    items = [];
-    itemTag = ItemTag.None;
-    includes(item) {
-        if (this.items.includes(item))
-            return true;
-        if (this.itemTag == ItemTag.None)
-            return false;
-        if ((item.tag & this.itemTag) != 0)
-            return true;
-        return false;
-    }
-}
-class Inventory {
-    items = [];
-    maxItems;
-    constructor(maxItems) {
-        this.maxItems = maxItems;
     }
 }
 /// <reference path="../../Player/Inventory.ts" />
@@ -1134,9 +1265,9 @@ class Smelter extends InventoryBuilding {
     Inventory;
     constructor(position, size) {
         super(position, size);
-        this.Inventory = new Inventory(20);
-        this.Inventory.items.push(new InventoryItem(GetItem(ItemType.CopperOre), 1));
-        this.Inventory.items.push(new InventoryItem(GetItem(ItemType.IronPlate), 3));
+        this.Inventory = new Inventory(2);
+        this.Inventory.AddItem(new InventoryItem(GetItem(ItemType.CopperOre), 1, 0));
+        this.Inventory.AddItem(new InventoryItem(GetItem(ItemType.IronPlate), 3, 1));
     }
     Act(deltaTime) {
     }
@@ -1144,7 +1275,7 @@ class Smelter extends InventoryBuilding {
         this.OpenGUI();
     }
     OpenGUI() {
-        const gui = new GUI(800, 400)
+        const gui = new BuildingGUI(800, 400)
             .AddTopBar("Smelter!")
             .AddText(new AABB(new Vector2(400, 60), new Vector2(200, 10)), "Smelter", 40, "center")
             .AddSlot(new AABB(new Vector2(80, 150), new Vector2(100, 100)), this.Inventory.items[0])
@@ -1175,6 +1306,7 @@ class EntityItem extends Entity {
         RenderManager.ctx.drawImage(this.item.image, this.position.x * Chunk.PixelSize + cameraOffset.x, this.position.y * Chunk.PixelSize + cameraOffset.y, this.AABB.width * Chunk.PixelSize, this.AABB.height * Chunk.PixelSize);
     }
     OnClick() {
+        Player.ins.PlayerInventory.AddItem(new InventoryItem(this.item, 1, 0));
         this.destroy();
     }
 }
@@ -1251,6 +1383,8 @@ async function Main() {
     LoadItems();
     Player.ins.move(new Vector2(0, 0)); //updates chunks and moves player
     new RenderManager();
+    Player.ins.GetPlayerGUI(); //Generates player GUI
+    //temp
     const a = new Smelter(new Vector2(1, 1), new Vector2(1, 1));
     a.SetTexture("SigmaMachine");
     const b = new Smelter(new Vector2(3, 2), new Vector2(1, 1));

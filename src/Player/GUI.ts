@@ -2,16 +2,11 @@ class GUI{
     public elements: GUIElement[];
     public interactiveElements: GUIElement[];
     public AABB: AABB;
-    public BackgroundImage: HTMLImageElement;
     constructor(width: number, height: number){
         this.elements = [];
         this.interactiveElements = [];
         this.AABB = new AABB(new Vector2(0, 0), new Vector2(width, height));
 
-        this.BackgroundImage = new Image();
-        this.SetBackground("Default");
-
-        this.MoveToMiddleOfScreen();
         RenderManager.ins.AddGUI(this);
     }
     MoveToMiddleOfScreen(){
@@ -19,9 +14,73 @@ class GUI{
         this.AABB.y = 1080/2 - this.AABB.height/2;
     }
     Draw(scale: number){
+        this.elements.forEach(guiElement => guiElement.Draw(scale, new Vector2(this.AABB.x*scale, this.AABB.y*scale)));
+    }
+    Close(){
+        RenderManager.ins.RemoveGUI(this);
+    }
+    AddSimple(AABB: AABB, color: rgba): GUI{
+        this.AddElement(new GUISimple(AABB, color));
+        return this;
+    }
+    AddElement(element: GUIElement){
+        element.parent = this;
+        this.elements.push(element);
+    }
+    AddInteractiveElement(element: GUIElement){
+        this.AddElement(element);
+        this.interactiveElements.push(element);
+    }
+    AddText(AABB: AABB, text: string, textSize: number, textAlign: CanvasTextAlign = "left"): GUI{
+        const element = new GUIText(AABB, text, textSize, textAlign);
+        this.AddElement(element);
+        return this;
+    }
+    AddImage(AABB: AABB, img: HTMLImageElement): GUI{
+        const element = new GUIImage(AABB, img);
+        this.AddElement(element);
+        return this;
+    }
+    AddButton(AABB: AABB, text: string, onClick: Function): GUI{
+        const button = new GUIButton(AABB, text, onClick);
+        this.AddInteractiveElement(button);
+        return this;
+    }
+    AddImageButton(AABB: AABB, img: HTMLImageElement, onClick: Function): GUI{
+        const button = new GUIImageButton(AABB, img, onClick);
+        this.AddInteractiveElement(button);
+        return this;
+    }
+    AddSlot(AABB: AABB, Item: InventoryItem): GUI{
+        const slot = new GUISlot(AABB, Item);
+        this.AddInteractiveElement(slot);
+        return this;
+    }
+    AddTopBar(Header: string){
+        this.AddSimple(new AABB(new Vector2(0, -30), new Vector2(this.AABB.width, 25)), new rgba(255, 255, 255, 0.5));
+        this.AddText(new AABB(new Vector2(10, -10), new Vector2(100, 20)), Header, 20);
+        const closeButtonImage = new Image();
+        closeButtonImage.src = "Images/GUI/x.png";
+        this.AddImageButton(new AABB(new Vector2(this.AABB.width-25, -27.5), new Vector2(20, 20)), closeButtonImage, () => this.Close());
+        return this;
+    }
+    public static GetGUIScale(): number{
+        return Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    }
+}
+class BuildingGUI extends GUI{
+    public BackgroundImage: HTMLImageElement;
+    constructor(width: number, height: number){
+        super(width, height);
+
+        this.BackgroundImage = new Image();
+        this.SetBackground("Default");
+
+        this.MoveToMiddleOfScreen();
+    }
+    override Draw(scale: number){
         //draw background
         this.DrawBackground9Slice(scale, 16);
-
 
         this.elements.forEach(guiElement => guiElement.Draw(scale, new Vector2(this.AABB.x*scale, this.AABB.y*scale)));
     }
@@ -64,61 +123,32 @@ class GUI{
         //center
         RenderManager.ctx.drawImage(this.BackgroundImage, left, top, right - left, bottom - top, destLeft + scaledBorder, destTop + scaledBorder, (width - 2 * border) * pixelScale, (height - 2 * border) * pixelScale);
     }
-    Close(){
-        RenderManager.ins.RemoveGUI(this);
-    }
     SetBackground(backgroundName: string): GUI{
         this.BackgroundImage = new Image();
         this.BackgroundImage.src = `Images/GUI/Backgrounds/${backgroundName}.png`;
         return this;
     }
-    AddSimple(AABB: AABB, color: rgba): GUI{
-        this.AddElement(new GUISimple(AABB, color));
-        return this;
+}
+class BottomClampGUI extends GUI{
+    constructor(width: number, height: number){
+        super(width, height);
+        this.MoveToBottomOfScreen();   
     }
-    AddElement(element: GUIElement){
-        element.parent = this;
-        this.elements.push(element);
+    MoveToBottomOfScreen(){
+        this.AABB.y = window.innerHeight;
+        this.AABB.height = window.innerHeight;
+        this.AABB.width = window.innerWidth;
+
+        this.elements.forEach(element => {
+            //assume that every element with a width at least half of curret width is supposted to fill the screen
+            if(element.AABB.width > window.innerWidth*0.5){
+                element.AABB.width = window.innerWidth;
+            }
+        });
     }
-    AddInteractiveElement(element: GUIElement){
-        this.AddElement(element);
-        this.interactiveElements.push(element);
-    }
-    AddText(AABB: AABB, text: string, textSize: number, textAlign: CanvasTextAlign = "left"): GUI{
-        const element = new GUIText(AABB, text, textSize, textAlign);
-        this.AddElement(element);
-        return this;
-    }
-    AddImage(AABB: AABB, img: HTMLImageElement): GUI{
-        const element = new GUIImage(AABB, img);
-        this.AddElement(element);
-        return this;
-    }
-    AddButton(AABB: AABB, text: string, onClick: Function): GUI{
-        const button = new GUIButton(AABB, text, onClick);
-        this.AddInteractiveElement(button);
-        return this;
-    }
-    AddImageButton(AABB: AABB, img: HTMLImageElement, onClick: Function): GUI{
-        const button = new GUIImageButton(AABB, img, onClick);
-        this.AddInteractiveElement(button);
-        return this;
-    }
-    AddSlot(AABB: AABB, Item: InventoryItem | null = null): GUI{
-        const slot = new GUISlot(AABB, Item);
-        this.AddInteractiveElement(slot);
-        return this;
-    }
-    AddTopBar(Header: string){
-        this.AddSimple(new AABB(new Vector2(0, -30), new Vector2(this.AABB.width, 25)), new rgba(255, 255, 255, 0.5));
-        this.AddText(new AABB(new Vector2(10, -10), new Vector2(100, 20)), Header, 20);
-        const closeButtonImage = new Image();
-        closeButtonImage.src = "Images/GUI/x.png";
-        this.AddImageButton(new AABB(new Vector2(this.AABB.width-25, -27.5), new Vector2(20, 20)), closeButtonImage, () => this.Close());
-        return this;
-    }
-    public static GetGUIScale(): number{
-        return Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    override Draw(scale: number){
+        this.MoveToBottomOfScreen();
+        super.Draw(1);
     }
 }
 abstract class GUIElement{
@@ -218,10 +248,10 @@ class GUIImageButton extends GUIInteractable{
     }
 }
 class GUISlot extends GUIElement implements IInteract{
-    public itemInSlot: InventoryItem | null = null;
+    public itemInSlot: InventoryItem;
     private static InventoryItemOffset: number = 4;
     private static InventorySlotImage: HTMLImageElement;
-    constructor(AABB: AABB, itemInSlot: InventoryItem | null = null){
+    constructor(AABB: AABB, itemInSlot: InventoryItem){
         super();
         this.AABB = AABB;
         this.itemInSlot = itemInSlot;
@@ -240,13 +270,34 @@ class GUISlot extends GUIElement implements IInteract{
             this.AABB.height*scale);
 
         //draw item if not null
-        if(this.itemInSlot){
+        if(this.itemInSlot && this.itemInSlot.item){
             RenderManager.ctx.drawImage(
                 this.itemInSlot.item.image,  
                 this.AABB.x*scale+offset.x + GUISlot.InventoryItemOffset/2,
                 this.AABB.y*scale+offset.y + GUISlot.InventoryItemOffset/2, 
                 this.AABB.width*scale - GUISlot.InventoryItemOffset,
                 this.AABB.height*scale - GUISlot.InventoryItemOffset);
+
+            //draw amount
+            if(this.itemInSlot.amount > 1){
+                RenderManager.ctx.strokeStyle = "black";
+                RenderManager.ctx.fillStyle = "white";
+
+                RenderManager.ctx.textAlign = "right";
+                RenderManager.ctx.font = "20px Tiny5";
+
+                RenderManager.ctx.lineWidth = 5;
+
+                //outline
+                RenderManager.ctx.strokeText(this.itemInSlot.amount.toString(),
+                    this.AABB.x*scale+offset.x + this.AABB.width*scale - GUISlot.InventoryItemOffset/2 - 3, 
+                    this.AABB.y*scale+offset.y + this.AABB.height*scale - GUISlot.InventoryItemOffset/2 - 6);
+
+                //fill text
+                RenderManager.ctx.fillText(this.itemInSlot.amount.toString(), 
+                    this.AABB.x*scale+offset.x + this.AABB.width*scale - GUISlot.InventoryItemOffset/2 - 3, 
+                    this.AABB.y*scale+offset.y + this.AABB.height*scale - GUISlot.InventoryItemOffset/2 - 6);
+            }
         }
     }
     OnClick(){

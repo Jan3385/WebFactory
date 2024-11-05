@@ -2,10 +2,10 @@ class Smelter extends InventoryBuilding {
     public Inventory: Inventory;
     constructor(position: Vector2, size: Vector2) {
         super(position, size);
-        this.Inventory = new Inventory(20);
+        this.Inventory = new Inventory(2);
 
-        this.Inventory.items.push(new InventoryItem(GetItem(ItemType.CopperOre), 1));
-        this.Inventory.items.push(new InventoryItem(GetItem(ItemType.IronPlate), 3));
+        this.Inventory.AddItem(new InventoryItem(GetItem(ItemType.CopperOre), 1, 0));
+        this.Inventory.AddItem(new InventoryItem(GetItem(ItemType.IronPlate), 3, 1));
     }
     public Act(deltaTime: number): void {
         
@@ -14,7 +14,7 @@ class Smelter extends InventoryBuilding {
         this.OpenGUI();
     }
     public override OpenGUI(): GUI {
-        const gui = new GUI(800, 400)
+        const gui = new BuildingGUI(800, 400)
             .AddTopBar("Smelter!")
             .AddText(new AABB(new Vector2(400, 60), new Vector2(200, 10)), "Smelter", 40, "center")
             .AddSlot(new AABB(new Vector2(80, 150), new Vector2(100, 100)), this.Inventory.items[0])

@@ -1,4 +1,5 @@
 /// <reference path="../Math/Math.ts" />
+/// <reference path="../Player/Inventory.ts" />
 
 class InputManager{
     public static ins: InputManager = new InputManager();
@@ -140,6 +141,19 @@ class InputManager{
     //Mouse
 
     onMouseDown(event: MouseEvent){
+        /*  Mouse Events
+         * 0 - left click, 1 - middle click, 2 - right click, 3 - back, 4 - forward
+        */
+        switch(event.button){
+            case 0:
+                InputManager.ins.OnLeftClick(event);
+                break;
+            case 2:
+                InputManager.ins.OnRightClick(event);
+                break;
+        }
+    }
+    OnLeftClick(event: MouseEvent){
         const mousePos: Vector2 = new Vector2(event.clientX, event.clientY);
         const worldPos: Vector2 = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divide(Chunk.PixelSize);
         const voxelPos: Vector2 = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
@@ -159,22 +173,44 @@ class InputManager{
         });
 
         //check if any GUI element was clicked
-        const GUIScale = GUI.GetGUIScale();
         RenderManager.ins.ActiveGUIs.forEach(gui => {
-            gui.interactiveElements.forEach(element => {
+            const GUIScale = gui instanceof BottomClampGUI? 1 : GUI.GetGUIScale();
+            gui.interactiveElements.every(element => {
                 if(element.GetOnScreenAABB(GUIScale).isDotInside(mousePos.x, mousePos.y)) {
-                    if(IsInteractable(element)) element.OnClick();
-                    return;
+                    if(element instanceof GUISlot){
+                        if(Player.ins.HandInventory.items[0].item == element.itemInSlot.item){
+                            element.itemInSlot.amount += Player.ins.HandInventory.items[0].amount;
+                            Player.ins.HandInventory.items[0] = InventoryItem.CreateEmpty(0);
+                        } else {
+                            InventoryItem.Swap(Player.ins.HandInventory.items[0], element.itemInSlot);
+                        }
+
+                        //once handeled a collision, exit
+                        return false;
+                    }
+                    else if(IsInteractable(element)) {
+                        element.OnClick();
+
+                        //once handeled a collision, exit
+                        return false;
+                    }
                 }
+                return true;
             });
         });
 
-        MapManager.ins.buildings.forEach(building => {
+        MapManager.ins.buildings.every(building => {
             if(building.AABB.isDotInside(voxelPos.x + .5, voxelPos.y + .5)){
                 building.OnClick();
-                return;
+
+                //once handeled a collision, exit
+                return false;
             }
+            return true;
         });
+    }
+    OnRightClick(event: MouseEvent){
+
     }
     onMouseUp(event: MouseEvent){
         
