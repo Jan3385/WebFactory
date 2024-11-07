@@ -67,6 +67,29 @@ class GUI{
     public static GetGUIScale(): number{
         return Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
     }
+    public static ForClickedGUIs(mousePos: Vector2, callback: (element: GUIInteractable | GUISlot) => void){
+        RenderManager.ins.ActiveGUIs.forEach(gui => {
+            const GUIScale = gui instanceof BottomClampGUI? 1 : GUI.GetGUIScale();
+            
+            gui.interactiveElements.every(element => {
+                if(element.GetOnScreenAABB(GUIScale).isDotInside(mousePos.x, mousePos.y)) {
+                    if(element instanceof GUISlot){
+                        callback(element);
+
+                        //once handeled a collision, exit
+                        return false;
+                    }
+                    else if(IsInteractable(element)) {
+                        callback(element);
+
+                        //once handeled a collision, exit
+                        return false;
+                    }
+                }
+                return true;
+            });
+        });
+    }
 }
 class BuildingGUI extends GUI{
     public BackgroundImage: HTMLImageElement;

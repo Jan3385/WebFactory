@@ -159,44 +159,32 @@ class InputManager{
         const voxelPos: Vector2 = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
         /*
         console.log(voxelPos);
-
         const color = MapManager.ins.cPlanet.GetDataAt(voxelPos.x, voxelPos.y)?.color;
         console.log('%c color', `background: ${color?.get()}; color: ${color?.get()}`);
         */
 
         //check if item was clicked
-        MapManager.ins.entities.forEach(entity => {
+        MapManager.ins.entities.every(entity => {
             if(entity instanceof EntityItem && entity.AABB.isDotInside(worldPos.x, worldPos.y)){
                 entity.OnClick();
-                return;
+                return false;
             }
+            return true;
         });
 
         //check if any GUI element was clicked
-        RenderManager.ins.ActiveGUIs.forEach(gui => {
-            const GUIScale = gui instanceof BottomClampGUI? 1 : GUI.GetGUIScale();
-            gui.interactiveElements.every(element => {
-                if(element.GetOnScreenAABB(GUIScale).isDotInside(mousePos.x, mousePos.y)) {
-                    if(element instanceof GUISlot){
-                        if(Player.ins.HandInventory.items[0].item == element.itemInSlot.item){
-                            element.itemInSlot.amount += Player.ins.HandInventory.items[0].amount;
-                            Player.ins.HandInventory.items[0] = InventoryItem.CreateEmpty(0);
-                        } else {
-                            InventoryItem.Swap(Player.ins.HandInventory.items[0], element.itemInSlot);
-                        }
-
-                        //once handeled a collision, exit
-                        return false;
-                    }
-                    else if(IsInteractable(element)) {
-                        element.OnClick();
-
-                        //once handeled a collision, exit
-                        return false;
-                    }
+        GUI.ForClickedGUIs(mousePos, (element: GUIElement | GUISlot) => {
+            if(element instanceof GUISlot){
+                if(Player.ins.HandInventory.items[0].item == element.itemInSlot.item){
+                    element.itemInSlot.amount += Player.ins.HandInventory.items[0].amount;
+                    Player.ins.HandInventory.items[0] = InventoryItem.CreateEmpty(0);
+                } else {
+                    InventoryItem.Swap(Player.ins.HandInventory.items[0], element.itemInSlot);
                 }
-                return true;
-            });
+            }
+            else if(IsInteractable(element)) {
+                element.OnClick();
+            }
         });
 
         MapManager.ins.buildings.every(building => {
@@ -210,7 +198,24 @@ class InputManager{
         });
     }
     OnRightClick(event: MouseEvent){
-
+        console.log("Right Click");
+        const mousePos: Vector2 = new Vector2(event.clientX, event.clientY);
+        const worldPos: Vector2 = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divide(Chunk.PixelSize);
+        const voxelPos: Vector2 = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
+        
+        GUI.ForClickedGUIs(mousePos, (element: GUIElement | GUISlot) => {
+            if(element instanceof GUISlot){
+                if(Player.ins.HandInventory.items[0].item == element.itemInSlot.item){
+                    Player.ins.HandInventory.items[0].amount += Math.floor(element.itemInSlot.amount/2);
+                    element.itemInSlot.amount = Math.ceil(element.itemInSlot.amount/2);
+                } else {
+                    if(Math.floor(element.itemInSlot.amount/2) == 0) return;
+                    Player.ins.HandInventory.items[0].item = element.itemInSlot.item;
+                    Player.ins.HandInventory.items[0].amount = Math.floor(element.itemInSlot.amount/2);
+                    element.itemInSlot.amount = Math.ceil(element.itemInSlot.amount/2);
+                }
+            }
+        });
     }
     onMouseUp(event: MouseEvent){
         

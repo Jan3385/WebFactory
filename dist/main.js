@@ -686,6 +686,26 @@ class GUI {
     static GetGUIScale() {
         return Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
     }
+    static ForClickedGUIs(mousePos, callback) {
+        RenderManager.ins.ActiveGUIs.forEach(gui => {
+            const GUIScale = gui instanceof BottomClampGUI ? 1 : GUI.GetGUIScale();
+            gui.interactiveElements.every(element => {
+                if (element.GetOnScreenAABB(GUIScale).isDotInside(mousePos.x, mousePos.y)) {
+                    if (element instanceof GUISlot) {
+                        callback(element);
+                        //once handeled a collision, exit
+                        return false;
+                    }
+                    else if (IsInteractable(element)) {
+                        callback(element);
+                        //once handeled a collision, exit
+                        return false;
+                    }
+                }
+                return true;
+            });
+        });
+    }
 }
 class BuildingGUI extends GUI {
     BackgroundImage;
@@ -1126,41 +1146,31 @@ class InputManager {
         const voxelPos = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
         /*
         console.log(voxelPos);
-
         const color = MapManager.ins.cPlanet.GetDataAt(voxelPos.x, voxelPos.y)?.color;
         console.log('%c color', `background: ${color?.get()}; color: ${color?.get()}`);
         */
         //check if item was clicked
-        MapManager.ins.entities.forEach(entity => {
+        MapManager.ins.entities.every(entity => {
             if (entity instanceof EntityItem && entity.AABB.isDotInside(worldPos.x, worldPos.y)) {
                 entity.OnClick();
-                return;
+                return false;
             }
+            return true;
         });
         //check if any GUI element was clicked
-        RenderManager.ins.ActiveGUIs.forEach(gui => {
-            const GUIScale = gui instanceof BottomClampGUI ? 1 : GUI.GetGUIScale();
-            gui.interactiveElements.every(element => {
-                if (element.GetOnScreenAABB(GUIScale).isDotInside(mousePos.x, mousePos.y)) {
-                    if (element instanceof GUISlot) {
-                        if (Player.ins.HandInventory.items[0].item == element.itemInSlot.item) {
-                            element.itemInSlot.amount += Player.ins.HandInventory.items[0].amount;
-                            Player.ins.HandInventory.items[0] = InventoryItem.CreateEmpty(0);
-                        }
-                        else {
-                            InventoryItem.Swap(Player.ins.HandInventory.items[0], element.itemInSlot);
-                        }
-                        //once handeled a collision, exit
-                        return false;
-                    }
-                    else if (IsInteractable(element)) {
-                        element.OnClick();
-                        //once handeled a collision, exit
-                        return false;
-                    }
+        GUI.ForClickedGUIs(mousePos, (element) => {
+            if (element instanceof GUISlot) {
+                if (Player.ins.HandInventory.items[0].item == element.itemInSlot.item) {
+                    element.itemInSlot.amount += Player.ins.HandInventory.items[0].amount;
+                    Player.ins.HandInventory.items[0] = InventoryItem.CreateEmpty(0);
                 }
-                return true;
-            });
+                else {
+                    InventoryItem.Swap(Player.ins.HandInventory.items[0], element.itemInSlot);
+                }
+            }
+            else if (IsInteractable(element)) {
+                element.OnClick();
+            }
         });
         MapManager.ins.buildings.every(building => {
             if (building.AABB.isDotInside(voxelPos.x + .5, voxelPos.y + .5)) {
@@ -1172,6 +1182,25 @@ class InputManager {
         });
     }
     OnRightClick(event) {
+        console.log("Right Click");
+        const mousePos = new Vector2(event.clientX, event.clientY);
+        const worldPos = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divide(Chunk.PixelSize);
+        const voxelPos = mousePos.subtract(Player.ins.camera.GetCameraOffset()).divideAndFloor(Chunk.PixelSize);
+        GUI.ForClickedGUIs(mousePos, (element) => {
+            if (element instanceof GUISlot) {
+                if (Player.ins.HandInventory.items[0].item == element.itemInSlot.item) {
+                    Player.ins.HandInventory.items[0].amount += Math.floor(element.itemInSlot.amount / 2);
+                    element.itemInSlot.amount = Math.ceil(element.itemInSlot.amount / 2);
+                }
+                else {
+                    if (Math.floor(element.itemInSlot.amount / 2) == 0)
+                        return;
+                    Player.ins.HandInventory.items[0].item = element.itemInSlot.item;
+                    Player.ins.HandInventory.items[0].amount = Math.floor(element.itemInSlot.amount / 2);
+                    element.itemInSlot.amount = Math.ceil(element.itemInSlot.amount / 2);
+                }
+            }
+        });
     }
     onMouseUp(event) {
     }
