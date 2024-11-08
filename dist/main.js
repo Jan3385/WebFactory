@@ -943,6 +943,23 @@ class RenderManager {
         this.ActiveGUIs.forEach(gui => gui.Draw(GUIScale));
         this.PreviousCameraAABB = Player.ins.camera.AABB.copy();
         this.PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
+        //rener item on cursor
+        if (Player.ins.HandInventory.items[0].item != null) {
+            const item = Player.ins.HandInventory.items[0];
+            const ItemScale = GUIScale * 80;
+            RenderManager.ctx.drawImage(item.item.image, InputManager.ins.mousePos.x - ItemScale / 2, InputManager.ins.mousePos.y - ItemScale / 2, ItemScale, ItemScale);
+            if (item.amount > 1) {
+                RenderManager.ctx.strokeStyle = "black";
+                RenderManager.ctx.fillStyle = "white";
+                RenderManager.ctx.textAlign = "right";
+                RenderManager.ctx.font = "20px Tiny5";
+                RenderManager.ctx.lineWidth = 5;
+                //outline
+                RenderManager.ctx.strokeText(item.amount.toString(), InputManager.ins.mousePos.x + ItemScale / 2, InputManager.ins.mousePos.y + ItemScale / 2);
+                //fill text
+                RenderManager.ctx.fillText(item.amount.toString(), InputManager.ins.mousePos.x + ItemScale / 2, InputManager.ins.mousePos.y + ItemScale / 2);
+            }
+        }
     }
     OnWindowResize() {
         RenderManager.canvas.width = window.innerWidth;
