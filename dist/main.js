@@ -495,6 +495,10 @@ class InventoryItem {
         b.item = temp;
         b.amount = temp2;
     }
+    delete() {
+        this.item = null;
+        this.amount = 0;
+    }
 }
 var ItemTag;
 (function (ItemTag) {
@@ -1031,6 +1035,10 @@ class InputManager {
         window.addEventListener("mouseup", this.onMouseUp, false);
         window.addEventListener("mousemove", this.onMouseMove, false);
         window.addEventListener("wheel", this.onMouseWheel, false);
+        //disables right click context menu
+        window.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+        }, false);
     }
     //calls repeatedly on key hold
     onKeyDown(event) {
@@ -1184,11 +1192,11 @@ class InputManager {
                     if (element.parent == RenderManager.ins.GetPlayerGUI())
                         return;
                     Player.ins.PlayerInventory.AddItem(element.itemInSlot);
-                    element.itemInSlot = InventoryItem.CreateEmpty(0);
+                    element.itemInSlot.delete();
                 }
                 else if (Player.ins.HandInventory.items[0].item == element.itemInSlot.item) { //if item is the same, add to the clicked slot
                     element.itemInSlot.amount += Player.ins.HandInventory.items[0].amount;
-                    Player.ins.HandInventory.items[0] = InventoryItem.CreateEmpty(0);
+                    Player.ins.HandInventory.items[0].delete();
                 }
                 else {
                     InventoryItem.Swap(Player.ins.HandInventory.items[0], element.itemInSlot); //if player has a different item in hand, swap

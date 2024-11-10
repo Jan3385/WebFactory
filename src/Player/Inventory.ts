@@ -20,6 +20,10 @@ class InventoryItem{
         b.item = temp;
         b.amount = temp2;
     }
+    public delete(){
+        this.item = null;
+        this.amount = 0;
+    }
 }
 enum ItemTag{
     None = 0,
