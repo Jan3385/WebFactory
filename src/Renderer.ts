@@ -143,4 +143,7 @@ class RenderManager{
     public CloseAllGUIs(){
         this.ActiveGUIs.forEach(gui => gui.Close());
     }
+    public GetPlayerGUI(): GUI{
+        return this.ActiveGUIs.find(gui => gui instanceof BottomClampGUI)!;
+    }
 }

@@ -996,6 +996,9 @@ class RenderManager {
     CloseAllGUIs() {
         this.ActiveGUIs.forEach(gui => gui.Close());
     }
+    GetPlayerGUI() {
+        return this.ActiveGUIs.find(gui => gui instanceof BottomClampGUI);
+    }
 }
 let ExecTimeStarts = [];
 function TimeExec(id) {
@@ -1177,12 +1180,18 @@ class InputManager {
         //check if any GUI element was clicked
         GUI.ForClickedGUIs(mousePos, (element) => {
             if (element instanceof GUISlot) {
-                if (Player.ins.HandInventory.items[0].item == element.itemInSlot.item) {
+                if (event.shiftKey) { //shift click item into player inventory
+                    if (element.parent == RenderManager.ins.GetPlayerGUI())
+                        return;
+                    Player.ins.PlayerInventory.AddItem(element.itemInSlot);
+                    element.itemInSlot = InventoryItem.CreateEmpty(0);
+                }
+                else if (Player.ins.HandInventory.items[0].item == element.itemInSlot.item) { //if item is the same, add to the clicked slot
                     element.itemInSlot.amount += Player.ins.HandInventory.items[0].amount;
                     Player.ins.HandInventory.items[0] = InventoryItem.CreateEmpty(0);
                 }
                 else {
-                    InventoryItem.Swap(Player.ins.HandInventory.items[0], element.itemInSlot);
+                    InventoryItem.Swap(Player.ins.HandInventory.items[0], element.itemInSlot); //if player has a different item in hand, swap
                 }
             }
             else if (IsInteractable(element)) {
