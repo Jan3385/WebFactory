@@ -363,10 +363,22 @@ class Chunk {
         this.PreDrawChunk();
     }
     PreDrawChunk() {
-        for (let y = 0; y < Chunk.ChunkSize; y++) {
-            for (let x = 0; x < Chunk.ChunkSize; x++) {
-                this.chunkRenderCtx.fillStyle = this.data[y][x].color.get();
-                this.chunkRenderCtx.fillRect(x, y, 1, 1);
+        if (typeof (Worker) !== "undefined") {
+            const worker = new Worker('src/workers/ChunkDrawWorker.js');
+            worker.postMessage({
+                MapData: this.data,
+            });
+            worker.onmessage = (e) => {
+                //returns offscreen canvas
+                this.chunkRender = e.data;
+            };
+        }
+        else { //No web worker support..
+            for (let y = 0; y < Chunk.ChunkSize; y++) {
+                for (let x = 0; x < Chunk.ChunkSize; x++) {
+                    this.chunkRenderCtx.fillStyle = this.data[y][x].color.get();
+                    this.chunkRenderCtx.fillRect(x, y, 1, 1);
+                }
             }
         }
     }
@@ -956,7 +968,7 @@ class RenderManager {
                 RenderManager.ctx.strokeStyle = "black";
                 RenderManager.ctx.fillStyle = "white";
                 RenderManager.ctx.textAlign = "right";
-                RenderManager.ctx.font = "20px Tiny5";
+                RenderManager.ctx.font = "15px Tiny5";
                 RenderManager.ctx.lineWidth = 5;
                 //outline
                 RenderManager.ctx.strokeText(item.amount.toString(), InputManager.ins.mousePos.x + ItemScale / 2, InputManager.ins.mousePos.y + ItemScale / 2);

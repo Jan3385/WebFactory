@@ -69,7 +69,7 @@ class RenderManager{
                 RenderManager.ctx.fillStyle = "white";
 
                 RenderManager.ctx.textAlign = "right";
-                RenderManager.ctx.font = "20px Tiny5";
+                RenderManager.ctx.font = "15px Tiny5";
 
                 RenderManager.ctx.lineWidth = 5;
 
