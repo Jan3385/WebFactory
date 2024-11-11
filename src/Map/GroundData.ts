@@ -8,6 +8,8 @@ class Chunk{
     //rendered size of individual voxel pixels
     public static PixelSize: number = 18; //lowering this makes the maximum world size smaller
 
+    private static WorkerPool: ChunkWorkerRenderPool;
+
     //left top position in the grid-space
     position: Vector2;
     data: GroundData[][] = [];
@@ -16,7 +18,7 @@ class Chunk{
     constructor(position: Vector2) {
         this.position = position;
         this.chunkRender = new OffscreenCanvas(Chunk.ChunkSize, Chunk.ChunkSize);
-        this.chunkRenderCtx = this.chunkRender.getContext('2d', {alpha: false})!
+        this.chunkRenderCtx = this.chunkRender.getContext('2d', {alpha: false})!;
 
         const defaultGroundData = new GroundData(new rgb(0, 0, 0));
         for(let y = 0; y < Chunk.ChunkSize; y++){
@@ -25,26 +27,27 @@ class Chunk{
                 this.data[y][x] = defaultGroundData;
             }
         }
+
+        if(Chunk.WorkerPool == undefined){
+            Chunk.WorkerPool = new ChunkWorkerRenderPool();
+        }
+
         this.Load();
     }
     Load(){
+
+        //1ms execution time on my pc
         for(let y = 0; y < Chunk.ChunkSize; y++){
             for(let x = 0; x < Chunk.ChunkSize; x++){
                 this.data[y][x] = ValueNoise.valueNoise.GetGroundDataAt(x + this.position.x * Chunk.ChunkSize, y + this.position.y * Chunk.ChunkSize);
             }
         }
+
         this.PreDrawChunk();
     }
     PreDrawChunk(){
         if(typeof(Worker) !== "undefined"){
-            const worker = new Worker('src/workers/ChunkDrawWorker.js');
-            worker.postMessage({
-                MapData: this.data,
-            });
-            worker.onmessage = (e) => {
-                //returns offscreen canvas
-                this.chunkRender = e.data;
-            }
+            Chunk.WorkerPool.addRenderTask(this.data, this);
         }
         else{ //No web worker support..
             for(let y = 0; y < Chunk.ChunkSize; y++){
@@ -54,6 +57,9 @@ class Chunk{
                 }
             }
         }
+    }
+    DrawChunk(BitMap: ImageBitmap){
+        this.chunkRenderCtx.drawImage(BitMap, 0, 0);
     }
     GetChunkRender(): OffscreenCanvas{
         return this.chunkRender;

@@ -12,11 +12,11 @@ class Camera{
         //Camera AABB in grid-space
         this.AABB = new AABB(
                 new Vector2(
-                    (this.position.x - window.innerWidth/2) / Chunk.PixelSize,
-                    (this.position.y - window.innerHeight/2) / Chunk.PixelSize),
+                    (this.position.x - window.outerWidth/2) / Chunk.PixelSize,
+                    (this.position.y - window.outerHeight/2) / Chunk.PixelSize),
                 new Vector2( 
-                    (window.outerWidth) / Chunk.PixelSize,
-                    (window.outerHeight) / Chunk.PixelSize),
+                    (window.innerWidth) / Chunk.PixelSize,
+                    (window.innerWidth) / Chunk.PixelSize),
             );
     }
     //moves the camera and updates visible chunks
@@ -30,8 +30,8 @@ class Camera{
                     (this.position.x - window.innerWidth/2) / Chunk.PixelSize,
                     (this.position.y - window.innerHeight/2) / Chunk.PixelSize),
                 new Vector2( 
-                    (window.outerWidth) / Chunk.PixelSize,
-                    (window.outerHeight) / Chunk.PixelSize),
+                    (window.innerWidth) / Chunk.PixelSize,
+                    (window.innerHeight) / Chunk.PixelSize),
             );
 
         MapManager.ins.UpdateChunks();

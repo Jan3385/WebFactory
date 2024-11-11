@@ -336,6 +336,7 @@ class Chunk {
     static ChunkSize = 32;
     //rendered size of individual voxel pixels
     static PixelSize = 18; //lowering this makes the maximum world size smaller
+    static WorkerPool;
     //left top position in the grid-space
     position;
     data = [];
@@ -352,9 +353,13 @@ class Chunk {
                 this.data[y][x] = defaultGroundData;
             }
         }
+        if (Chunk.WorkerPool == undefined) {
+            Chunk.WorkerPool = new ChunkWorkerRenderPool();
+        }
         this.Load();
     }
     Load() {
+        //1ms execution time on my pc
         for (let y = 0; y < Chunk.ChunkSize; y++) {
             for (let x = 0; x < Chunk.ChunkSize; x++) {
                 this.data[y][x] = ValueNoise.valueNoise.GetGroundDataAt(x + this.position.x * Chunk.ChunkSize, y + this.position.y * Chunk.ChunkSize);
@@ -364,14 +369,7 @@ class Chunk {
     }
     PreDrawChunk() {
         if (typeof (Worker) !== "undefined") {
-            const worker = new Worker('src/workers/ChunkDrawWorker.js');
-            worker.postMessage({
-                MapData: this.data,
-            });
-            worker.onmessage = (e) => {
-                //returns offscreen canvas
-                this.chunkRender = e.data;
-            };
+            Chunk.WorkerPool.addRenderTask(this.data, this);
         }
         else { //No web worker support..
             for (let y = 0; y < Chunk.ChunkSize; y++) {
@@ -381,6 +379,9 @@ class Chunk {
                 }
             }
         }
+    }
+    DrawChunk(BitMap) {
+        this.chunkRenderCtx.drawImage(BitMap, 0, 0);
     }
     GetChunkRender() {
         return this.chunkRender;
@@ -578,14 +579,14 @@ class Camera {
         //Camera position in screen-position
         this.position = pos;
         //Camera AABB in grid-space
-        this.AABB = new AABB(new Vector2((this.position.x - window.innerWidth / 2) / Chunk.PixelSize, (this.position.y - window.innerHeight / 2) / Chunk.PixelSize), new Vector2((window.outerWidth) / Chunk.PixelSize, (window.outerHeight) / Chunk.PixelSize));
+        this.AABB = new AABB(new Vector2((this.position.x - window.outerWidth / 2) / Chunk.PixelSize, (this.position.y - window.outerHeight / 2) / Chunk.PixelSize), new Vector2((window.innerWidth) / Chunk.PixelSize, (window.innerWidth) / Chunk.PixelSize));
     }
     //moves the camera and updates visible chunks
     UpdateCamera() {
         this.position = Player.ins.position
             .multiply(Chunk.PixelSize) //world position to screen position
             .add(new Vector2(Chunk.PixelSize / 2, Chunk.PixelSize / 2)); //keeps the player in the center of the screen
-        this.AABB = new AABB(new Vector2((this.position.x - window.innerWidth / 2) / Chunk.PixelSize, (this.position.y - window.innerHeight / 2) / Chunk.PixelSize), new Vector2((window.outerWidth) / Chunk.PixelSize, (window.outerHeight) / Chunk.PixelSize));
+        this.AABB = new AABB(new Vector2((this.position.x - window.innerWidth / 2) / Chunk.PixelSize, (this.position.y - window.innerHeight / 2) / Chunk.PixelSize), new Vector2((window.innerWidth) / Chunk.PixelSize, (window.innerHeight) / Chunk.PixelSize));
         MapManager.ins.UpdateChunks();
     }
     GetCameraOffset() {
@@ -1014,6 +1015,69 @@ class RenderManager {
     }
     GetPlayerGUI() {
         return this.ActiveGUIs.find(gui => gui instanceof BottomClampGUI);
+    }
+}
+class ChunkWorkerRenderPool {
+    static WorkerPoolSize = 6;
+    WorkerPool = [];
+    WorkerPoolWorking = [];
+    taskQueue = [];
+    constructor() {
+        if (typeof (Worker) === "undefined") {
+            console.log("No web worker support.. You will experience some issues, good luck :)");
+            return;
+        }
+        ;
+        for (let i = 0; i < ChunkWorkerRenderPool.WorkerPoolSize; i++) {
+            const worker = new Worker("/workers/ChunkDrawWorker.js");
+            worker.onmessage = (e) => {
+                this.handleWorkerResponse(e, i);
+            };
+            this.WorkerPool.push(worker);
+            this.WorkerPoolWorking.push(false);
+        }
+    }
+    handleWorkerResponse(e, WorkerIndex) {
+        this.WorkerPoolWorking[WorkerIndex] = false;
+        const chunk = MapManager.ins.cPlanet.Chunks.find(chunk => chunk.position.x == e.data.chunkPosition.x
+            && chunk.position.y == e.data.chunkPosition.y);
+        if (chunk != undefined)
+            chunk.DrawChunk(e.data.ImageBits);
+        if (this.taskQueue.length > 0) {
+            const task = this.taskQueue.pop();
+            this.asignTask(task[0], task[1]);
+        }
+    }
+    addRenderTask(data, chunk) {
+        const worker = this.getAvalibleWorker();
+        if (worker != null) {
+            this.WorkerPoolWorking[this.WorkerPool.indexOf(worker)] = true;
+            worker.postMessage({
+                MapData: data,
+                chunkPosition: chunk.position
+            });
+        }
+        else {
+            this.taskQueue.push([data, chunk]);
+        }
+    }
+    asignTask(data, chunk) {
+        const worker = this.getAvalibleWorker();
+        if (worker != null) {
+            this.WorkerPoolWorking[this.WorkerPool.indexOf(worker)] = true;
+            worker.postMessage({
+                MapData: data,
+                chunkPosition: chunk.position
+            });
+        }
+    }
+    getAvalibleWorker() {
+        for (let i = 0; i < ChunkWorkerRenderPool.WorkerPoolSize; i++) {
+            if (!this.WorkerPoolWorking[i]) {
+                return this.WorkerPool[i];
+            }
+        }
+        return null;
     }
 }
 let ExecTimeStarts = [];

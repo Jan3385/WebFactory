@@ -147,3 +147,70 @@ class RenderManager{
         return this.ActiveGUIs.find(gui => gui instanceof BottomClampGUI)!;
     }
 }
+class ChunkWorkerRenderPool{
+    public static WorkerPoolSize: number = 6;
+    public WorkerPool: Worker[] = [];
+    public WorkerPoolWorking: boolean[] = [];
+
+    public taskQueue: [GroundData[][], Chunk][] = [];
+
+    constructor(){
+        if(typeof(Worker) === "undefined") {
+            console.log("No web worker support.. You will experience some issues, good luck :)");
+            return;
+        };
+        for(let i = 0; i < ChunkWorkerRenderPool.WorkerPoolSize; i++){
+            const worker = new Worker("/workers/ChunkDrawWorker.js");
+            worker.onmessage = (e) => {
+                this.handleWorkerResponse(e, i);
+            }
+            this.WorkerPool.push(worker);
+            this.WorkerPoolWorking.push(false);
+        }
+    }
+    handleWorkerResponse(e: MessageEvent<any>, WorkerIndex: number){
+        this.WorkerPoolWorking[WorkerIndex] = false;
+
+        const chunk = 
+            MapManager.ins.cPlanet.Chunks.find(chunk => chunk.position.x == e.data.chunkPosition.x 
+                && chunk.position.y == e.data.chunkPosition.y);
+
+        if(chunk != undefined) chunk.DrawChunk(e.data.ImageBits);
+
+        if(this.taskQueue.length > 0){
+            const task = this.taskQueue.pop()!;
+            this.asignTask(task[0], task[1]);
+        }
+    }
+    addRenderTask(data: GroundData[][], chunk: Chunk){
+        const worker = this.getAvalibleWorker();
+        if(worker != null){
+            this.WorkerPoolWorking[this.WorkerPool.indexOf(worker)] = true;
+            worker.postMessage({
+                MapData: data,
+                chunkPosition: chunk.position
+            });
+        }else{
+            this.taskQueue.push([data, chunk]);
+        }
+    }
+    asignTask(data: GroundData[][], chunk: Chunk){
+        const worker = this.getAvalibleWorker();
+        if(worker != null){
+            this.WorkerPoolWorking[this.WorkerPool.indexOf(worker)] = true;
+            worker.postMessage({
+                MapData: data,
+                chunkPosition: chunk.position
+            });
+        }
+    }
+
+    getAvalibleWorker(): Worker | null{
+        for(let i = 0; i < ChunkWorkerRenderPool.WorkerPoolSize; i++){
+            if(!this.WorkerPoolWorking[i]){
+                return this.WorkerPool[i];
+            }
+        }
+        return null;
+    }
+}
