@@ -941,9 +941,7 @@ class RenderManager {
         this.IndicatorImg.src = "images/indicators/MouseIndicator.png";
     }
     PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
-    PreviousCameraAABB = Player.ins.camera.AABB.copy();
     Draw() {
-        const FrameOffset = Player.ins.camera.GetCameraOffset().subtract(this.PreviousCameraOffset);
         const cameraOffset = Player.ins.camera.GetCameraOffset();
         //draw chunks
         MapManager.ins.cPlanet.Chunks.forEach(chunk => {
@@ -958,7 +956,6 @@ class RenderManager {
         //render GUI
         const GUIScale = GUI.GetGUIScale();
         this.ActiveGUIs.forEach(gui => gui.Draw(GUIScale));
-        this.PreviousCameraAABB = Player.ins.camera.AABB.copy();
         this.PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
         //rener item on cursor
         if (Player.ins.HandInventory.items[0].item != null) {
@@ -1517,6 +1514,7 @@ function LoadItems() {
 /// <reference path="./Map/Entities/Buildings/Smelter.ts" />
 /// <reference path="./Map/Items/Item.ts" />
 const fps = 50;
+let deltaTime = 1;
 async function Main() {
     // Start
     LoadItems();
@@ -1538,10 +1536,11 @@ async function Main() {
         let startTime = performance.now();
         InputManager.ins.UpdateInput();
         Player.ins.move(InputManager.ins.MovementVector); //updates chunks and moves player   
+        MapManager.ins.buildings.forEach(building => building.Act(deltaTime));
         RenderManager.ins.Draw(); // draws everything
         let endTime = performance.now();
         const executionTime = endTime - startTime;
-        //TODO: deltatime
+        deltaTime = executionTime;
         if (executionTime > 16)
             console.log("Lag spike! wait time designated for:", (1 / fps * 1000) - executionTime);
         await new Promise(r => setTimeout(r, Math.max((1 / fps * 1000) - executionTime, 0)));

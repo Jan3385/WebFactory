@@ -5,6 +5,7 @@
 /// <reference path="./Map/Items/Item.ts" />
 
 const fps = 50;
+let deltaTime = 1;
 
 async function Main() {
     // Start
@@ -34,11 +35,13 @@ async function Main() {
 
         Player.ins.move(InputManager.ins.MovementVector); //updates chunks and moves player   
 
+        MapManager.ins.buildings.forEach(building => building.Act(deltaTime));
+
         RenderManager.ins.Draw(); // draws everything
 
         let endTime = performance.now()
         const executionTime = endTime - startTime;
-        //TODO: deltatime
+        deltaTime = executionTime;
         if(executionTime > 16) console.log("Lag spike! wait time designated for:" ,(1/fps*1000) - executionTime);
         await new Promise(r => setTimeout(r, Math.max((1/fps*1000) - executionTime, 0)));
     }

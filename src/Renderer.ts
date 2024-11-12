@@ -22,11 +22,8 @@ class RenderManager{
     }
 
     private PreviousCameraOffset: Vector2 = Player.ins.camera.GetCameraOffset();
-    private PreviousCameraAABB: AABB = Player.ins.camera.AABB.copy();
 
     public Draw(){
-        const FrameOffset = Player.ins.camera.GetCameraOffset().subtract(this.PreviousCameraOffset);
-
         const cameraOffset = Player.ins.camera.GetCameraOffset();
 
         //draw chunks
@@ -51,7 +48,6 @@ class RenderManager{
         const GUIScale = GUI.GetGUIScale();
         this.ActiveGUIs.forEach(gui => gui.Draw(GUIScale));
 
-        this.PreviousCameraAABB = Player.ins.camera.AABB.copy();
         this.PreviousCameraOffset = Player.ins.camera.GetCameraOffset();
 
         //rener item on cursor
