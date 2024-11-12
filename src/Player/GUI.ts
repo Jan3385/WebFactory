@@ -69,7 +69,7 @@ class GUI{
     }
     public static ForClickedGUIs(mousePos: Vector2, callback: (element: GUIInteractable | GUISlot) => void){
         RenderManager.ins.ActiveGUIs.forEach(gui => {
-            const GUIScale = gui instanceof BottomClampInventoryGUI? 1 : GUI.GetGUIScale();
+            const GUIScale = gui instanceof BottomClampInventoryGUI ? 1 : GUI.GetGUIScale();
             
             gui.interactiveElements.every(element => {
                 if(element.GetOnScreenAABB(GUIScale).isDotInside(mousePos.x, mousePos.y)) {
@@ -182,6 +182,7 @@ class BottomClampInventoryGUI extends GUI{
     }
     private static SetGUIElements(){
         BottomClampInventoryGUI.ins.elements = [];
+        BottomClampInventoryGUI.ins.interactiveElements = [];
 
         const WindowWidth = window.innerWidth;
         const SlotSize = window.innerWidth/20;

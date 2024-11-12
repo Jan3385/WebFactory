@@ -785,6 +785,7 @@ class BottomClampInventoryGUI extends GUI {
     }
     static SetGUIElements() {
         BottomClampInventoryGUI.ins.elements = [];
+        BottomClampInventoryGUI.ins.interactiveElements = [];
         const WindowWidth = window.innerWidth;
         const SlotSize = window.innerWidth / 20;
         const TotalSlotWidth = (SlotSize + 10) * Player.ins.PlayerInventory.items.length + 10;
