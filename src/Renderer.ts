@@ -140,7 +140,7 @@ class RenderManager{
         this.ActiveGUIs.forEach(gui => gui.Close());
     }
     public GetPlayerGUI(): GUI{
-        return this.ActiveGUIs.find(gui => gui instanceof BottomClampGUI)!;
+        return this.ActiveGUIs.find(gui => gui instanceof BottomClampInventoryGUI)!;
     }
 }
 class ChunkWorkerRenderPool{

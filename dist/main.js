@@ -616,24 +616,6 @@ class Player {
         RenderManager.ctx.fillStyle = 'red';
         RenderManager.ctx.fillRect(this.position.x * Chunk.PixelSize + CameraOffset.x, this.position.y * Chunk.PixelSize + CameraOffset.y, Chunk.PixelSize, Chunk.PixelSize);
     }
-    GetPlayerGUI() {
-        //change how slots are added
-        const gui = new BottomClampGUI(window.innerWidth, window.innerHeight)
-            .AddSimple(new AABB(new Vector2(0, -100), new Vector2(window.innerWidth, 100)), new rgba(99, 110, 114, 0.5))
-            .AddSlot(new AABB(new Vector2(10, -90), new Vector2(80, 80)), this.PlayerInventory.items[0])
-            .AddSlot(new AABB(new Vector2(100, -90), new Vector2(80, 80)), this.PlayerInventory.items[1])
-            .AddSlot(new AABB(new Vector2(190, -90), new Vector2(80, 80)), this.PlayerInventory.items[2])
-            .AddSlot(new AABB(new Vector2(280, -90), new Vector2(80, 80)), this.PlayerInventory.items[3])
-            .AddSlot(new AABB(new Vector2(370, -90), new Vector2(80, 80)), this.PlayerInventory.items[4])
-            .AddSlot(new AABB(new Vector2(460, -90), new Vector2(80, 80)), this.PlayerInventory.items[5])
-            .AddSlot(new AABB(new Vector2(550, -90), new Vector2(80, 80)), this.PlayerInventory.items[6])
-            .AddSlot(new AABB(new Vector2(640, -90), new Vector2(80, 80)), this.PlayerInventory.items[7])
-            .AddSlot(new AABB(new Vector2(730, -90), new Vector2(80, 80)), this.PlayerInventory.items[8])
-            .AddSlot(new AABB(new Vector2(820, -90), new Vector2(80, 80)), this.PlayerInventory.items[9])
-            .AddSlot(new AABB(new Vector2(910, -90), new Vector2(80, 80)), this.PlayerInventory.items[10])
-            .AddSlot(new AABB(new Vector2(1000, -90), new Vector2(80, 80)), this.PlayerInventory.items[11]);
-        return gui;
-    }
 }
 class GUI {
     elements;
@@ -705,7 +687,7 @@ class GUI {
     }
     static ForClickedGUIs(mousePos, callback) {
         RenderManager.ins.ActiveGUIs.forEach(gui => {
-            const GUIScale = gui instanceof BottomClampGUI ? 1 : GUI.GetGUIScale();
+            const GUIScale = gui instanceof BottomClampInventoryGUI ? 1 : GUI.GetGUIScale();
             gui.interactiveElements.every(element => {
                 if (element.GetOnScreenAABB(GUIScale).isDotInside(mousePos.x, mousePos.y)) {
                     if (element instanceof GUISlot) {
@@ -776,7 +758,8 @@ class BuildingGUI extends GUI {
         return this;
     }
 }
-class BottomClampGUI extends GUI {
+class BottomClampInventoryGUI extends GUI {
+    static ins;
     constructor(width, height) {
         super(width, height);
         this.MoveToBottomOfScreen();
@@ -785,16 +768,39 @@ class BottomClampGUI extends GUI {
         this.AABB.y = window.innerHeight;
         this.AABB.height = window.innerHeight;
         this.AABB.width = window.innerWidth;
+        /* this was a bad idea and i will keep it here so i can be dissapointed in myself
         this.elements.forEach(element => {
             //assume that every element with a width at least half of curret width is supposted to fill the screen
-            if (element.AABB.width > window.innerWidth * 0.5) {
+            if(element.AABB.width > window.innerWidth*0.5){
                 element.AABB.width = window.innerWidth;
             }
         });
+        */
     }
+    static GetAndSetPlayerGUI() {
+        const gui = new BottomClampInventoryGUI(window.innerWidth, window.innerHeight);
+        BottomClampInventoryGUI.ins = gui;
+        BottomClampInventoryGUI.SetGUIElements();
+        return gui;
+    }
+    static SetGUIElements() {
+        BottomClampInventoryGUI.ins.elements = [];
+        const WindowWidth = window.innerWidth;
+        const SlotSize = window.innerWidth / 20;
+        const TotalSlotWidth = (SlotSize + 10) * Player.ins.PlayerInventory.items.length + 10;
+        const GUICenterOffset = (WindowWidth - TotalSlotWidth) / 2;
+        BottomClampInventoryGUI.ins.AddSimple(new AABB(new Vector2(GUICenterOffset, -(SlotSize + 20)), new Vector2(TotalSlotWidth, (SlotSize + 20))), new rgba(99, 110, 114, 0.5));
+        for (let i = 0; i < Player.ins.PlayerInventory.items.length; i++) {
+            BottomClampInventoryGUI.ins.AddSlot(new AABB(new Vector2(GUICenterOffset + 10 + i * (SlotSize + 10), -(SlotSize + 10)), new Vector2(SlotSize, SlotSize)), Player.ins.PlayerInventory.items[i]);
+        }
+    }
+    previousScale = 1;
     Draw(scale) {
+        if (this.previousScale != scale)
+            BottomClampInventoryGUI.SetGUIElements();
         this.MoveToBottomOfScreen();
         super.Draw(1);
+        this.previousScale = scale;
     }
 }
 class GUIElement {
@@ -1011,7 +1017,7 @@ class RenderManager {
         this.ActiveGUIs.forEach(gui => gui.Close());
     }
     GetPlayerGUI() {
-        return this.ActiveGUIs.find(gui => gui instanceof BottomClampGUI);
+        return this.ActiveGUIs.find(gui => gui instanceof BottomClampInventoryGUI);
     }
 }
 class ChunkWorkerRenderPool {
@@ -1520,7 +1526,7 @@ async function Main() {
     LoadItems();
     Player.ins.move(new Vector2(0, 0)); //updates chunks and moves player
     new RenderManager();
-    Player.ins.GetPlayerGUI(); //Generates player GUI
+    BottomClampInventoryGUI.GetAndSetPlayerGUI(); //Generates player GUI
     //temp
     const a = new Smelter(new Vector2(1, 1), new Vector2(1, 1));
     a.SetTexture("SigmaMachine");

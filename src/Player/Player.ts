@@ -73,23 +73,4 @@ class Player{
         RenderManager.ctx.fillStyle = 'red';
         RenderManager.ctx.fillRect(this.position.x * Chunk.PixelSize + CameraOffset.x, this.position.y * Chunk.PixelSize + CameraOffset.y, Chunk.PixelSize, Chunk.PixelSize);
     }
-
-    public GetPlayerGUI(): GUI{
-        //change how slots are added
-        const gui = new BottomClampGUI(window.innerWidth, window.innerHeight)
-            .AddSimple(new AABB(new Vector2(0,-100), new Vector2(window.innerWidth, 100)), new rgba(99, 110, 114, 0.5))
-            .AddSlot(new AABB(new Vector2(10, -90), new Vector2(80, 80)), this.PlayerInventory.items[0])
-            .AddSlot(new AABB(new Vector2(100, -90), new Vector2(80, 80)), this.PlayerInventory.items[1])
-            .AddSlot(new AABB(new Vector2(190, -90), new Vector2(80, 80)), this.PlayerInventory.items[2])
-            .AddSlot(new AABB(new Vector2(280, -90), new Vector2(80, 80)), this.PlayerInventory.items[3])
-            .AddSlot(new AABB(new Vector2(370, -90), new Vector2(80, 80)), this.PlayerInventory.items[4])
-            .AddSlot(new AABB(new Vector2(460, -90), new Vector2(80, 80)), this.PlayerInventory.items[5])
-            .AddSlot(new AABB(new Vector2(550, -90), new Vector2(80, 80)), this.PlayerInventory.items[6])
-            .AddSlot(new AABB(new Vector2(640, -90), new Vector2(80, 80)), this.PlayerInventory.items[7])
-            .AddSlot(new AABB(new Vector2(730, -90), new Vector2(80, 80)), this.PlayerInventory.items[8])
-            .AddSlot(new AABB(new Vector2(820, -90), new Vector2(80, 80)), this.PlayerInventory.items[9])
-            .AddSlot(new AABB(new Vector2(910, -90), new Vector2(80, 80)), this.PlayerInventory.items[10])
-            .AddSlot(new AABB(new Vector2(1000, -90), new Vector2(80, 80)), this.PlayerInventory.items[11])
-        return gui;
-    }
 }

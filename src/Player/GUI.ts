@@ -69,7 +69,7 @@ class GUI{
     }
     public static ForClickedGUIs(mousePos: Vector2, callback: (element: GUIInteractable | GUISlot) => void){
         RenderManager.ins.ActiveGUIs.forEach(gui => {
-            const GUIScale = gui instanceof BottomClampGUI? 1 : GUI.GetGUIScale();
+            const GUIScale = gui instanceof BottomClampInventoryGUI? 1 : GUI.GetGUIScale();
             
             gui.interactiveElements.every(element => {
                 if(element.GetOnScreenAABB(GUIScale).isDotInside(mousePos.x, mousePos.y)) {
@@ -152,7 +152,8 @@ class BuildingGUI extends GUI{
         return this;
     }
 }
-class BottomClampGUI extends GUI{
+class BottomClampInventoryGUI extends GUI{
+    static ins: BottomClampInventoryGUI;
     constructor(width: number, height: number){
         super(width, height);
         this.MoveToBottomOfScreen();   
@@ -162,16 +163,47 @@ class BottomClampGUI extends GUI{
         this.AABB.height = window.innerHeight;
         this.AABB.width = window.innerWidth;
 
+        /* this was a bad idea and i will keep it here so i can be dissapointed in myself
         this.elements.forEach(element => {
             //assume that every element with a width at least half of curret width is supposted to fill the screen
             if(element.AABB.width > window.innerWidth*0.5){
                 element.AABB.width = window.innerWidth;
             }
         });
+        */
     }
+    public static GetAndSetPlayerGUI(): GUI{
+        const gui = new BottomClampInventoryGUI(window.innerWidth, window.innerHeight);
+        BottomClampInventoryGUI.ins = gui;
+        
+        BottomClampInventoryGUI.SetGUIElements();
+
+        return gui;
+    }
+    private static SetGUIElements(){
+        BottomClampInventoryGUI.ins.elements = [];
+
+        const WindowWidth = window.innerWidth;
+        const SlotSize = window.innerWidth/20;
+        const TotalSlotWidth = (SlotSize + 10) * Player.ins.PlayerInventory.items.length + 10;
+        const GUICenterOffset = (WindowWidth-TotalSlotWidth)/2;
+
+        BottomClampInventoryGUI.ins.AddSimple(new AABB(new Vector2(GUICenterOffset,-(SlotSize+20)), new Vector2(TotalSlotWidth, (SlotSize+20))), new rgba(99, 110, 114, 0.5))
+        
+        for(let i = 0; i < Player.ins.PlayerInventory.items.length; i++){
+            BottomClampInventoryGUI.ins.AddSlot(
+                new AABB(new Vector2(GUICenterOffset+10 + i*(SlotSize+10), -(SlotSize+10)), new Vector2(SlotSize, SlotSize)), 
+                Player.ins.PlayerInventory.items[i]);
+        }
+    }
+    previousScale: number = 1;
     override Draw(scale: number){
+        if(this.previousScale != scale) BottomClampInventoryGUI.SetGUIElements();
+
         this.MoveToBottomOfScreen();
         super.Draw(1);
+
+        this.previousScale = scale;
     }
 }
 abstract class GUIElement{
