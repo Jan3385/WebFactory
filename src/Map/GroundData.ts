@@ -8,7 +8,9 @@ class Chunk{
     //rendered size of individual voxel pixels
     public static PixelSize: number = 18; //lowering this makes the maximum world size smaller
 
-    private static WorkerPool: ChunkWorkerRenderPool;
+    private static WorkerRenderPool: ChunkWorkerRenderPool;
+    //private static WorkerGeneratePool: ChunkWorkerGeneratePool;
+
 
     //left top position in the grid-space
     position: Vector2;
@@ -20,16 +22,19 @@ class Chunk{
         this.chunkRender = new OffscreenCanvas(Chunk.ChunkSize, Chunk.ChunkSize);
         this.chunkRenderCtx = this.chunkRender.getContext('2d', {alpha: false})!;
 
+        if(Chunk.WorkerRenderPool == undefined){
+            Chunk.WorkerRenderPool = new ChunkWorkerRenderPool();
+        }
+        //if(Chunk.WorkerGeneratePool == undefined){
+        //    Chunk.WorkerGeneratePool = new ChunkWorkerGeneratePool();
+        //}
+
         const defaultGroundData = new GroundData(new rgb(0, 0, 0));
         for(let y = 0; y < Chunk.ChunkSize; y++){
             this.data[y] = [];
             for(let x = 0; x < Chunk.ChunkSize; x++){
                 this.data[y][x] = defaultGroundData;
             }
-        }
-
-        if(Chunk.WorkerPool == undefined){
-            Chunk.WorkerPool = new ChunkWorkerRenderPool();
         }
 
         this.Load();
@@ -43,11 +48,13 @@ class Chunk{
             }
         }
 
+        //Chunk.WorkerGeneratePool.addGenerationTask(this);
+
         this.PreDrawChunk();
     }
     PreDrawChunk(){
         if(typeof(Worker) !== "undefined"){
-            Chunk.WorkerPool.addRenderTask(this.data, this);
+            Chunk.WorkerRenderPool.addRenderTask(this.data, this);
         }
         else{ //No web worker support..
             for(let y = 0; y < Chunk.ChunkSize; y++){
@@ -92,3 +99,74 @@ class GroundData {
         this.color = color;
     }
 }
+/* WIP needs a lot of work
+class ChunkWorkerGeneratePool{
+    public static WorkerPoolSize: number = 6;
+    public WorkerPool: Worker[] = [];
+    public WorkerPoolWorking: boolean[] = [];
+
+    public taskQueue: Chunk[] = [];
+
+    constructor(){
+        if(typeof(Worker) === "undefined") {
+            console.log("No web worker support.. You will experience some issues, good luck :)");
+            return;
+        };
+
+        for(let i = 0; i < ChunkWorkerRenderPool.WorkerPoolSize; i++){
+            const worker = new Worker("/workers/ChunkGenerateWorker.js");
+            worker.onmessage = (e) => {
+                this.handleWorkerResponse(e, i);
+            }
+            this.WorkerPool.push(worker);
+            this.WorkerPoolWorking.push(false);
+        }
+    }
+    handleWorkerResponse(e: MessageEvent<any>, WorkerIndex: number){
+        this.WorkerPoolWorking[WorkerIndex] = false;
+
+        const chunk = 
+            MapManager.ins.cPlanet.Chunks.find(chunk => chunk.position.x == e.data.chunkPosition.x 
+                && chunk.position.y == e.data.chunkPosition.y);
+
+        if(chunk != undefined) chunk.data = e.data.GroundData;
+
+        if(this.taskQueue.length > 0){
+            const task = this.taskQueue.pop()!;
+            this.asignTask(task);
+        }
+    }
+    addGenerationTask(chunk: Chunk){
+        const worker = this.getAvalibleWorker();
+        if(worker != null){
+            this.WorkerPoolWorking[this.WorkerPool.indexOf(worker)] = true;
+            worker.postMessage({
+                chunkPosition: chunk.position,
+                chunkSize: Chunk.ChunkSize
+            });
+        }else{
+            this.taskQueue.push(chunk);
+        }
+    }
+    asignTask(chunk: Chunk){
+        const worker = this.getAvalibleWorker();
+        if(worker != null){
+            this.WorkerPoolWorking[this.WorkerPool.indexOf(worker)] = true;
+            worker.postMessage({
+                chunkPosition: chunk.position,
+                chunkSize: Chunk.ChunkSize,
+                ValueNoiseGenerator: ValueNoise.valueNoise,
+                PerlinNoiseGenerator: PerlinNoise.perlin,
+            });
+        }
+    }
+
+    getAvalibleWorker(): Worker | null{
+        for(let i = 0; i < ChunkWorkerRenderPool.WorkerPoolSize; i++){
+            if(!this.WorkerPoolWorking[i]){
+                return this.WorkerPool[i];
+            }
+        }
+        return null;
+    }
+} */

@@ -336,7 +336,8 @@ class Chunk {
     static ChunkSize = 32;
     //rendered size of individual voxel pixels
     static PixelSize = 18; //lowering this makes the maximum world size smaller
-    static WorkerPool;
+    static WorkerRenderPool;
+    //private static WorkerGeneratePool: ChunkWorkerGeneratePool;
     //left top position in the grid-space
     position;
     data = [];
@@ -346,15 +347,18 @@ class Chunk {
         this.position = position;
         this.chunkRender = new OffscreenCanvas(Chunk.ChunkSize, Chunk.ChunkSize);
         this.chunkRenderCtx = this.chunkRender.getContext('2d', { alpha: false });
+        if (Chunk.WorkerRenderPool == undefined) {
+            Chunk.WorkerRenderPool = new ChunkWorkerRenderPool();
+        }
+        //if(Chunk.WorkerGeneratePool == undefined){
+        //    Chunk.WorkerGeneratePool = new ChunkWorkerGeneratePool();
+        //}
         const defaultGroundData = new GroundData(new rgb(0, 0, 0));
         for (let y = 0; y < Chunk.ChunkSize; y++) {
             this.data[y] = [];
             for (let x = 0; x < Chunk.ChunkSize; x++) {
                 this.data[y][x] = defaultGroundData;
             }
-        }
-        if (Chunk.WorkerPool == undefined) {
-            Chunk.WorkerPool = new ChunkWorkerRenderPool();
         }
         this.Load();
     }
@@ -365,11 +369,12 @@ class Chunk {
                 this.data[y][x] = ValueNoise.valueNoise.GetGroundDataAt(x + this.position.x * Chunk.ChunkSize, y + this.position.y * Chunk.ChunkSize);
             }
         }
+        //Chunk.WorkerGeneratePool.addGenerationTask(this);
         this.PreDrawChunk();
     }
     PreDrawChunk() {
         if (typeof (Worker) !== "undefined") {
-            Chunk.WorkerPool.addRenderTask(this.data, this);
+            Chunk.WorkerRenderPool.addRenderTask(this.data, this);
         }
         else { //No web worker support..
             for (let y = 0; y < Chunk.ChunkSize; y++) {
@@ -409,6 +414,77 @@ class GroundData {
         this.color = color;
     }
 }
+/* WIP needs a lot of work
+class ChunkWorkerGeneratePool{
+    public static WorkerPoolSize: number = 6;
+    public WorkerPool: Worker[] = [];
+    public WorkerPoolWorking: boolean[] = [];
+
+    public taskQueue: Chunk[] = [];
+
+    constructor(){
+        if(typeof(Worker) === "undefined") {
+            console.log("No web worker support.. You will experience some issues, good luck :)");
+            return;
+        };
+
+        for(let i = 0; i < ChunkWorkerRenderPool.WorkerPoolSize; i++){
+            const worker = new Worker("/workers/ChunkGenerateWorker.js");
+            worker.onmessage = (e) => {
+                this.handleWorkerResponse(e, i);
+            }
+            this.WorkerPool.push(worker);
+            this.WorkerPoolWorking.push(false);
+        }
+    }
+    handleWorkerResponse(e: MessageEvent<any>, WorkerIndex: number){
+        this.WorkerPoolWorking[WorkerIndex] = false;
+
+        const chunk =
+            MapManager.ins.cPlanet.Chunks.find(chunk => chunk.position.x == e.data.chunkPosition.x
+                && chunk.position.y == e.data.chunkPosition.y);
+
+        if(chunk != undefined) chunk.data = e.data.GroundData;
+
+        if(this.taskQueue.length > 0){
+            const task = this.taskQueue.pop()!;
+            this.asignTask(task);
+        }
+    }
+    addGenerationTask(chunk: Chunk){
+        const worker = this.getAvalibleWorker();
+        if(worker != null){
+            this.WorkerPoolWorking[this.WorkerPool.indexOf(worker)] = true;
+            worker.postMessage({
+                chunkPosition: chunk.position,
+                chunkSize: Chunk.ChunkSize
+            });
+        }else{
+            this.taskQueue.push(chunk);
+        }
+    }
+    asignTask(chunk: Chunk){
+        const worker = this.getAvalibleWorker();
+        if(worker != null){
+            this.WorkerPoolWorking[this.WorkerPool.indexOf(worker)] = true;
+            worker.postMessage({
+                chunkPosition: chunk.position,
+                chunkSize: Chunk.ChunkSize,
+                ValueNoiseGenerator: ValueNoise.valueNoise,
+                PerlinNoiseGenerator: PerlinNoise.perlin,
+            });
+        }
+    }
+
+    getAvalibleWorker(): Worker | null{
+        for(let i = 0; i < ChunkWorkerRenderPool.WorkerPoolSize; i++){
+            if(!this.WorkerPoolWorking[i]){
+                return this.WorkerPool[i];
+            }
+        }
+        return null;
+    }
+} */ 
 /// <reference path="./GroundData.ts" />
 class Planet {
     Chunks = [];
@@ -531,6 +607,14 @@ class ItemGroup {
         if ((item.tag & this.itemTag) != 0)
             return true;
         return false;
+    }
+    addItem(item) {
+        if (this.items.includes(item))
+            return;
+        this.items.push(item);
+    }
+    setTag(itemTag) {
+        this.itemTag = itemTag;
     }
 }
 class Inventory {
@@ -1329,7 +1413,83 @@ class InputManager {
         Chunk.PixelSize = clamp(Chunk.PixelSize + WheelDir, 6, 30);
     }
 }
+var ItemType;
+(function (ItemType) {
+    ItemType[ItemType["IronOre"] = 0] = "IronOre";
+    ItemType[ItemType["IronIngot"] = 1] = "IronIngot";
+    ItemType[ItemType["CopperOre"] = 2] = "CopperOre";
+    ItemType[ItemType["CopperIngot"] = 3] = "CopperIngot";
+    ItemType[ItemType["IronPlate"] = 4] = "IronPlate";
+    ItemType[ItemType["Coal"] = 5] = "Coal";
+})(ItemType || (ItemType = {}));
+const ITEM_ICON_PREFIX = "Images/Items/";
+const Items = {
+    [ItemType.IronOre]: {
+        name: "Iron Ore",
+        image: new Image(32, 32),
+        description: "A chunk of iron ore",
+        weight: 1,
+        tag: ItemTag.Ore,
+    },
+    [ItemType.IronIngot]: {
+        name: "Iron Ingot",
+        image: new Image(32, 32),
+        description: "A bar of iron",
+        weight: 1,
+        tag: ItemTag.Ingot,
+    },
+    [ItemType.CopperOre]: {
+        name: "Copper Ore",
+        image: new Image(32, 32),
+        description: "A chunk of copper ore",
+        weight: 1,
+        tag: ItemTag.Ore,
+    },
+    [ItemType.CopperIngot]: {
+        name: "Copper Ingot",
+        image: new Image(32, 32),
+        description: "A bar of copper",
+        weight: 1,
+        tag: ItemTag.Ingot,
+    },
+    [ItemType.IronPlate]: {
+        name: "Iron Plate",
+        image: new Image(32, 32),
+        description: "A plate of iron",
+        weight: 1,
+        tag: ItemTag.None,
+    },
+    [ItemType.Coal]: {
+        name: "Coal",
+        image: new Image(32, 32),
+        description: "A chunk of coal",
+        weight: 1,
+        tag: ItemTag.Fuel,
+    },
+};
+function GetItem(type) {
+    return Items[type];
+}
+function LoadItems() {
+    for (let i = 0; i < Object.keys(Items).length; i++) {
+        GetItem(i).image.src = ITEM_ICON_PREFIX + GetItem(i).name.replace(/\s+/g, '_').toLowerCase() + ".png"; //replace spaces with underscores and find item image
+    }
+}
+/// <reference path="Item.ts" />
+class Recipe {
+    name;
+    ingredients;
+    result;
+    time;
+    constructor(name, ingredients, result, time) {
+        this.name = name;
+        this.ingredients = ingredients;
+        this.result = result;
+        this.time = time;
+    }
+}
 /// <reference path="../../Player/Inventory.ts" />
+/// <reference path="../Items/Recipes.ts" />
 class Entity {
     AABB;
     position;
@@ -1404,8 +1564,24 @@ class Building extends Entity {
 }
 class InventoryBuilding extends Building {
 }
+class EntityItem extends Entity {
+    item;
+    static ITEM_SIZE = new Vector2(0.9, 0.9); // 1,1 = 1 block
+    constructor(position, item) {
+        super(position, EntityItem.ITEM_SIZE, 5);
+        this.item = item;
+    }
+    Draw(cameraOffset) {
+        RenderManager.ctx.drawImage(this.item.image, this.position.x * Chunk.PixelSize + cameraOffset.x, this.position.y * Chunk.PixelSize + cameraOffset.y, this.AABB.width * Chunk.PixelSize, this.AABB.height * Chunk.PixelSize);
+    }
+    OnClick() {
+        Player.ins.PlayerInventory.AddItem(new InventoryItem(this.item, 1, 0));
+        this.destroy();
+    }
+}
 class Smelter extends InventoryBuilding {
     Inventory;
+    static Recipes = Smelter.GetRecipes();
     constructor(position, size) {
         super(position, size);
         this.Inventory = new Inventory(2);
@@ -1425,94 +1601,36 @@ class Smelter extends InventoryBuilding {
             .AddSlot(new AABB(new Vector2(620, 150), new Vector2(100, 100)), this.Inventory.items[1]);
         return gui;
     }
+    static GetRecipes() {
+        return [
+            new Recipe("Iron Smelting", [[ItemType.IronOre, 1]], [[ItemType.IronIngot, 1]], 2),
+            new Recipe("Copper Smelting", [[ItemType.CopperOre, 1]], [[ItemType.CopperIngot, 1]], 1),
+        ];
+    }
     GetOutputItems() {
-        throw new Error("Method not implemented.");
+        return [this.Inventory.items[1]];
     }
     GetInputItems() {
-        throw new Error("Method not implemented.");
+        return [this.Inventory.items[0]];
     }
     GetWantedItems() {
-        throw new Error("Method not implemented.");
+        const ig = new ItemGroup();
+        Smelter.Recipes.forEach(recipe => {
+            recipe.ingredients.forEach(ingredient => {
+                ig.addItem(GetItem(ingredient[0]));
+            });
+        });
+        return ig;
     }
     AddInputItem(item) {
-        throw new Error("Method not implemented.");
-    }
-}
-class EntityItem extends Entity {
-    item;
-    static ITEM_SIZE = new Vector2(0.9, 0.9); // 1,1 = 1 block
-    constructor(position, item) {
-        super(position, EntityItem.ITEM_SIZE, 5);
-        this.item = item;
-    }
-    Draw(cameraOffset) {
-        RenderManager.ctx.drawImage(this.item.image, this.position.x * Chunk.PixelSize + cameraOffset.x, this.position.y * Chunk.PixelSize + cameraOffset.y, this.AABB.width * Chunk.PixelSize, this.AABB.height * Chunk.PixelSize);
-    }
-    OnClick() {
-        Player.ins.PlayerInventory.AddItem(new InventoryItem(this.item, 1, 0));
-        this.destroy();
-    }
-}
-var ItemType;
-(function (ItemType) {
-    ItemType[ItemType["IronOre"] = 0] = "IronOre";
-    ItemType[ItemType["IronIngot"] = 1] = "IronIngot";
-    ItemType[ItemType["CopperOre"] = 2] = "CopperOre";
-    ItemType[ItemType["CopperIngot"] = 3] = "CopperIngot";
-    ItemType[ItemType["IronPlate"] = 4] = "IronPlate";
-    ItemType[ItemType["Coal"] = 5] = "Coal";
-})(ItemType || (ItemType = {}));
-const ITEM_ICON_PREFIX = "Images/Items/";
-const Items = {
-    [ItemType.IronOre]: {
-        name: "Iron Ore",
-        image: new Image(32, 32),
-        description: "A chunk of iron ore",
-        weight: 1,
-        tag: ItemTag.Ore,
-    },
-    [ItemType.IronIngot]: {
-        name: "Iron Ingot",
-        image: new Image(32, 32),
-        description: "A bar of iron",
-        weight: 1,
-        tag: ItemTag.Ingot,
-    },
-    [ItemType.CopperOre]: {
-        name: "Copper Ore",
-        image: new Image(32, 32),
-        description: "A chunk of copper ore",
-        weight: 1,
-        tag: ItemTag.Ore,
-    },
-    [ItemType.CopperIngot]: {
-        name: "Copper Ingot",
-        image: new Image(32, 32),
-        description: "A bar of copper",
-        weight: 1,
-        tag: ItemTag.Ingot,
-    },
-    [ItemType.IronPlate]: {
-        name: "Iron Plate",
-        image: new Image(32, 32),
-        description: "A plate of iron",
-        weight: 1,
-        tag: ItemTag.None,
-    },
-    [ItemType.Coal]: {
-        name: "Coal",
-        image: new Image(32, 32),
-        description: "A chunk of coal",
-        weight: 1,
-        tag: ItemTag.Fuel,
-    },
-};
-function GetItem(type) {
-    return Items[type];
-}
-function LoadItems() {
-    for (let i = 0; i < Object.keys(Items).length; i++) {
-        GetItem(i).image.src = ITEM_ICON_PREFIX + GetItem(i).name.replace(/\s+/g, '_').toLowerCase() + ".png"; //replace spaces with underscores and find item image
+        if (this.Inventory.items[0].item == null) {
+            this.Inventory.items[0] = item;
+            return true;
+        }
+        else if (this.Inventory.items[0] == item) {
+            this.Inventory.items[0].amount += item.amount;
+        }
+        return false;
     }
 }
 /// <reference path="./Player/Player.ts" />

@@ -1,3 +1,5 @@
+/// <reference path="Item.ts" />
+
 class Recipe{
     public name: string;
     public ingredients: Array<[ItemType, Number]>;

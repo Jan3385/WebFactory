@@ -1,23 +1,3 @@
-class EntityItem extends Entity {
-    public item: Item;
-    public static ITEM_SIZE = new Vector2(0.9, 0.9); // 1,1 = 1 block
-    constructor(position: Vector2, item: Item){
-        super(position, EntityItem.ITEM_SIZE, 5);
-        this.item = item;
-    }
-    Draw(cameraOffset: Vector2){
-        RenderManager.ctx.drawImage(
-            this.item.image, 
-            this.position.x * Chunk.PixelSize + cameraOffset.x, 
-            this.position.y * Chunk.PixelSize + cameraOffset.y,
-            this.AABB.width * Chunk.PixelSize,
-            this.AABB.height * Chunk.PixelSize);
-    }
-    OnClick(): void{
-        Player.ins.PlayerInventory.AddItem(new InventoryItem(this.item, 1, 0));
-        this.destroy();
-    }
-}
 interface Item {
     name: string;
     image: HTMLImageElement;
