@@ -40,6 +40,13 @@ class ItemGroup{
         if((item.tag & this.itemTag) != 0) return true;
         return false;
     }
+    addItem(item: Item){
+        if(this.items.includes(item)) return;
+        this.items.push(item);
+    }
+    setTag(itemTag: ItemTag){
+        this.itemTag = itemTag;
+    }
 }
 class Inventory{
     public items: InventoryItem[];

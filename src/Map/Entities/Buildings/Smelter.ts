@@ -1,5 +1,6 @@
 class Smelter extends InventoryBuilding {
     public Inventory: Inventory;
+    public static Recipes: Recipe[] = Smelter.GetRecipes();
     constructor(position: Vector2, size: Vector2) {
         super(position, size);
         this.Inventory = new Inventory(2);
@@ -21,16 +22,34 @@ class Smelter extends InventoryBuilding {
             .AddSlot(new AABB(new Vector2(620, 150), new Vector2(100, 100)), this.Inventory.items[1]);
         return gui;
     }
+    private static GetRecipes(): Recipe[] {
+        return [
+            new Recipe("Iron Smelting", [[ItemType.IronOre, 1]], [[ItemType.IronIngot, 1]], 2),
+            new Recipe("Copper Smelting", [[ItemType.CopperOre, 1]], [[ItemType.CopperIngot, 1]], 1),
+        ]
+    }
     public override GetOutputItems(): InventoryItem[] {
-        throw new Error("Method not implemented.");
+        return [ this.Inventory.items[1] ];
     }
     public override GetInputItems(): InventoryItem[] {
-        throw new Error("Method not implemented.");
+        return [ this.Inventory.items[0] ];
     }
     public override GetWantedItems(): ItemGroup {
-        throw new Error("Method not implemented.");
+        const ig = new ItemGroup();
+        Smelter.Recipes.forEach(recipe => {
+            recipe.ingredients.forEach(ingredient => {
+                ig.addItem(GetItem(ingredient[0]));
+            });
+        });
+        return ig;
     }
     public override AddInputItem(item: InventoryItem): boolean {
-        throw new Error("Method not implemented.");
+        if(this.Inventory.items[0].item == null){
+            this.Inventory.items[0] = item;
+            return true;
+        }else if(this.Inventory.items[0] == item){
+            this.Inventory.items[0].amount += item.amount;
+        }
+        return false;
     }
 }
